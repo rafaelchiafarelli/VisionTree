@@ -1,0 +1,1 @@
+"""This will generate the configuration of each camera."""
