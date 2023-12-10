@@ -21,9 +21,54 @@ This will be responsible to:
         * minimum is 5 maximum is 50
 * manage deletion of the new files.        
 """
+import configparser
+from Image import Maker
+from time import sleep
+import os
+import sys
+from pathlib import Path
+from shutil import copy
+cameras = []
+config = configparser.ConfigParser()
 
 def main():
-    print("Hello World!")
+    while True:
+        sleep(1)
+
+def create_folder(full_path,id, max_pic):
+    path = Path(full_path)
+    path.mkdir(parents=True, exist_ok=True)
+    for i in range(0, int(max_pic)+1):
+        copy("./assets/img.jpg", "{}/img_{}.jpg".format(full_path, i))
+        copy("./assets/met", "{}/met_{}.{}".format(full_path,i,id))
+
 
 if __name__ == "__main__":
+
+    config.read("./assets/camera.conf")
+    
+    id = 0
+    for section in config.sections():
+
+        sec = config[section]
+        if "high_res_rtsp" not in sec or "low_res_rtsp" not in sec or "low_res_folder" not in sec or "high_res_folder" not in sec or "max_pic" not in sec:
+            print("error in camera {}".format(section))
+            continue
+
+        create_folder(sec["low_res_folder"],str(id), sec["max_pic"])
+        create_folder(sec["high_res_folder"],str(id), sec["max_pic"])
+        
+        tmp = Maker.ImageMaker(str(id),sec["low_res_folder"],sec["high_res_folder"],int(sec["max_pic"]),sec["low_res_rtsp"], sec["high_res_rtsp"])
+        tmp.start()
+        cameras.append(tmp)
+        id+=1
+
+try:
     main()
+except KeyboardInterrupt:
+    # terminate main thread
+    print('Main interrupted! Exiting.')
+    for camera in cameras:
+        camera.stop()
+    sys.exit()
+    
