@@ -40,7 +40,7 @@ class Searcher():
         if self.max_pan < self.max_tilt:
             max_step = self.max_tilt    
         
-        self.mover = Movement(self.IP,True,max_step)
+        self.mover = Movement(self.IP,False,max_step)
         if self.go_to_pan != self.current_pan:
             self.move_to_pan()
         if self.go_to_tilt != self.current_tilt:
@@ -52,7 +52,10 @@ class Searcher():
                             enable_segmentation=True,
                             min_detection_confidence=0.5)
         
-
+    def __del__(self):
+        del self.mover
+        del self.visor
+    
     def move_to_pan(self):
         print("move to pan from: {} to: {}".format(self.current_pan, self.go_to_pan))
         if self.current_pan > self.go_to_pan:

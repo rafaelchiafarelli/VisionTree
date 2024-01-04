@@ -29,7 +29,9 @@ class Movement:
                 if last_move != current_move:
                     node.run(['./Searcher/assets/ptz.js', self.IP, current_move], )
                     last_move = current_move
-            sleep(2)
+                    sleep(2)
+            else:
+                sleep(2)
             
     def GoHome(self,max_steps):
         print("GoHome Start")

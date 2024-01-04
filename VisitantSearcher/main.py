@@ -8,7 +8,7 @@
 * control the flow of data if bogged down
 """
 from Searcher import Searcher
-from Searcher.Move import Movement
+
 
 import configparser
 
@@ -40,6 +40,10 @@ def main():
                 picture_name = "{}/img_{}.jpg".format(cameras[camera_id]["low_res_folder"],pic_id)
                 searchers[camera_id].run(picture_name)
                 break
+    for searcher in searchers:
+        del searcher
+    for camera in cameras:
+        del camera
                 
             
             
