@@ -57,6 +57,8 @@ if __name__ == "__main__":
 
         create_folder(sec["low_res_folder"],str(id), sec["max_pic"])
         create_folder(sec["high_res_folder"],str(id), sec["max_pic"])
+        create_folder(sec["found_folder"],str(id), 0)
+        create_folder(sec["stream_folder"],str(id), 0)
         
         tmp = Maker.ImageMaker(str(id),sec["low_res_folder"],sec["high_res_folder"],int(sec["max_pic"]),sec["low_res_rtsp"], sec["high_res_rtsp"])
         tmp.start()

@@ -17,6 +17,7 @@ import mediapipe as mp
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
 import cv2
+import os
 import mediapipe as mp
 import numpy as np
 import numpy as np
@@ -24,7 +25,7 @@ import uuid
 import json
 from Searcher.Constants import landmark_names as names
 class Vision:
-    def __init__(self,debug, static_image_mode, model_complexity, enable_segmentation,min_detection_confidence) -> None:
+    def __init__(self,debug, static_image_mode, model_complexity, enable_segmentation,min_detection_confidence, destination) -> None:
         print("start vision")
         self.debug = debug
         self.mp_drawing = mp.solutions.drawing_utils
@@ -35,10 +36,10 @@ class Vision:
             model_complexity=model_complexity,
             enable_segmentation=enable_segmentation,
             min_detection_confidence=min_detection_confidence)
-        
+        self.destination = destination
 
     
-    def search_body(self, file_path, destination):
+    def search_body(self, file_path):
         # For static images:
         BG_COLOR = (192, 192, 192) # gray
 
@@ -46,12 +47,13 @@ class Vision:
         image_height, image_width, _ = image.shape
         # Convert the BGR image to RGB before processing.
         results = self.pose.process(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
-
+        UUID=uuid.uuid4()
+        
         if not results.pose_landmarks:
             #print("no landmarks -- disregard")
-            return (False,{})
+            return (False,UUID,{})
 
-        UUID=uuid.uuid4()
+        
         landmarks = {}
         landmarks["width"]  = image.shape[0]
         landmarks["height"]  = image.shape[1]
@@ -61,7 +63,7 @@ class Vision:
             if idx < 7:
                 if landmark.visibility < 0.7: 
                     #print("landmark {} not visible, disregard.".format(names[idx]))
-                    return (False,{})
+                    return (False,UUID,{})
             
             if idx <= names.__len__():
                 landmarks[names[idx]] =[
@@ -71,20 +73,20 @@ class Vision:
                                         landmark.visibility]
             else:
                 #print("error in landmark index -- out of bounds idx:{}".format(idx))
-                return (False,{})
+                return (False,UUID,{})
         #calculate the size of the head considering the distance of the ears            
         if landmarks["left_ear"][0] - landmarks["right_ear"][0] < 0.07 or landmarks["left_ear"][0] - landmarks["right_ear"][0] > 0.30:
             #print("not a good sized head {}".format(UUID))
-            return (False,{})
+            return (False,UUID,{})
         #calculate if the head is above the shoulder considering the sholder avereage high and the nose
         if (landmarks["left_shoulder"][3]>0.5 and 
             landmarks["right_shoulder"][3]>0.5 and
             (landmarks["left_shoulder"][1] + landmarks["right_shoulder"][1])/2 <= landmarks["nose"][1]):
             #print("error - shoulder above the nose {}".format(UUID))
-            return (False,{})
+            return (False,UUID,{})
         #print("head {} is a GOOD HEAD".format(UUID))
         
-        with open("{}/{}.metadata".format(destination,UUID), "w") as metadata:
+        with open("{}/{}.metadata".format(self.destination,UUID), "w") as metadata:
             metadata.write(json.dumps(landmarks,indent=4))
 
         annotated_image = image.copy()
@@ -110,17 +112,36 @@ class Vision:
             # (this is necessary to avoid Python kernel form crashing) 
             cv2.waitKey(10) 
         
-        
+        # calculate if the face is turned to the camera
+        if landmarks["left_ear"][0] < landmarks["nose"][0]:
+            
+            print("face turned left -- do not use")
+            return (False,UUID,{})
+        if landmarks["right_ear"][0] > landmarks["nose"][0]:
+            print("face turned right -- do not use")
+            return (False,UUID,{})
+        if landmarks["mounth_left"][1] < landmarks["nose"][1]:
+            print("face upside down -- do not use")
+            return (False,UUID,{})
+        if landmarks["mounth_right"][1] < landmarks["nose"][1]:
+            print("face upside down -- do not use")
+            return (False,UUID,{})        
         # calculate the distance of the ears. if it is lower than a threshold, eliminates it
         
         #print('{}/{}.png'.format(destination,UUID))
 
 
-        cv2.imwrite('{}/annotated{}.png'.format(destination,UUID), annotated_image)
-        cv2.imwrite('{}/segmented{}.png'.format(destination,UUID), segmented_image)
-        cv2.imwrite('{}/original{}.png'.format(destination,UUID), image)
+        cv2.imwrite('{}/annotated{}.png'.format(self.destination,UUID), annotated_image)
+        cv2.imwrite('{}/segmented{}.png'.format(self.destination,UUID), segmented_image)
+        cv2.imwrite('{}/original{}.png'.format(self.destination,UUID), image)
 
         # Plot pose world landmarks.
         #self.mp_drawing.plot_landmarks(
         #    results.pose_world_landmarks, self.mp_pose.POSE_CONNECTIONS)
-        return UUID, landmarks  
+        return True,UUID, landmarks  
+    
+    def clean(self,UUID):
+        os.remove('{}/annotated{}.png'.format(self.destination,UUID))
+        os.remove('{}/segmented{}.png'.format(self.destination,UUID))
+        os.remove('{}/original{}.png'.format(self.destination,UUID))
+        os.remove("{}/{}.metadata".format(self.destination,UUID))
