@@ -42,21 +42,21 @@ class ImageMaker:
     def th(self):
         os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;udp"
 
-        low_res_cam = cv2.VideoCapture(self.rtsp_low, cv2.CAP_FFMPEG)
+        #low_res_cam = cv2.VideoCapture(self.rtsp_low, cv2.CAP_FFMPEG)
         high_res_cam = cv2.VideoCapture(self.rtsp_high, cv2.CAP_FFMPEG)
 
-        ret,low_frame = low_res_cam.read()
+        #ret,low_frame = low_res_cam.read()
         ret,high_frame = high_res_cam.read()
 
         id = 0
         
         while self.keep_alive:
             timestamp = datetime.datetime.now().timestamp() 
-            ret,low_frame = low_res_cam.read()
+            """ret,low_frame = low_res_cam.read()
             if ret is False:
                 continue
             img_hsv = cv2.cvtColor(low_frame, cv2.COLOR_BGR2HSV)
-            low_saturation = img_hsv[:, :, 1].mean()
+            low_saturation = img_hsv[:, :, 1].mean()"""
             
             ret,high_frame = high_res_cam.read()
             if ret is False:
@@ -64,13 +64,13 @@ class ImageMaker:
             img_hsv = cv2.cvtColor(high_frame, cv2.COLOR_BGR2HSV)
             high_saturation = img_hsv[:, :, 1].mean()
 
-            if low_saturation > 10 and high_saturation > 10:
+            if  high_saturation > 10: # and low_saturation > 10:
                 self.save_frame(high_frame, self.high_res_folder, id, high_saturation, timestamp)
-                self.save_frame(low_frame, self.low_res_folder, id, low_saturation, timestamp)
+                #self.save_frame(low_frame, self.low_res_folder, id, low_saturation, timestamp)
                 id+=1
                 if id > self.max_pic:
                     id = 0
-        low_res_cam.release()
+        #low_res_cam.release()
         high_res_cam.release()
                 
     def save_frame(self, frame, folder, id, saturation,timestamp):

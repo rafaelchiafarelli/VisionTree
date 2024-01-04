@@ -8,6 +8,9 @@ Use: node ptz.js <ip>  <UP|DWON|LEFT|RIGHT>
 var net = require('net');
 
 var client = new net.Socket();
+client.setTimeout(2000);
+client.on('timeout', ()=>client.emit('error', new Error('ETIMEDOUT')) );
+client.on('error', (e) => console.log((new Date()).toISOString(), 'Error', e.message));
 //find a way to have a timeout and a re-try
 client.connect(554,process.argv[2], function() {
 	console.log('move: '+process.argv[2]+' to:'+process.argv[3]);

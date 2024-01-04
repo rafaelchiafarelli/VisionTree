@@ -8,7 +8,7 @@
 * control the flow of data if bogged down
 """
 from Searcher import Searcher
-from Searcher.Move import Movement
+from Common import util
 
 import configparser
 
@@ -40,9 +40,10 @@ def main():
                 picture_name = "{}/img_{}.jpg".format(cameras[camera_id]["low_res_folder"],pic_id)
                 searchers[camera_id].run(picture_name)
                 break
-                
-            
-            
+    for searcher in searchers:
+        del searcher
+    for camera in cameras:
+        del camera
 
         
 if __name__ == "__main__":
@@ -67,28 +68,38 @@ if __name__ == "__main__":
              "max_tilt"  not in sec or 
              "zero_tilt"  not in sec or 
              "search_tilt"  not in sec or 
-             "go_to_tilt"  not in sec
+             "go_to_tilt"  not in sec or
+             "found_folder" not in sec or
+             "stream_folder" not in sec or
+             "configured_sized_head" not in sec
             ):
             print("error in camera {}".format(section))
             continue
+        go_home = False
+        if "go_home" in sec:
+            go_home = util.boolean(sec["go_home"])
+
         camera = {"low_res_folder": sec["low_res_folder"], 
                   "high_res_folder": sec["high_res_folder"],
                   "CamIP":sec["CamIP"]}
         cameras.append(camera)
         tmp  = Searcher.Searcher(
-                                debug=bool(sec["debug"]),
+                                debug=util.boolean(sec["debug"]),
                                 destination=sec["found_folder"],
+                                stream=sec["stream_folder"],
                                 IP=sec["CamIP"],
                                 current_pan=int(sec["current_pan"]),
                                 max_pan=int(sec["max_pan"]),
                                 zero_pan=int(sec["zero_pan"]),
-                                search_pan=bool(sec["search_pan"]),
+                                search_pan=util.boolean(sec["search_pan"]),
                                 go_to_pan=int(sec["go_to_pan"]),
                                 current_tilt=int(sec["current_tilt"]),
                                 max_tilt=int(sec["max_tilt"]),
                                 zero_tilt=int(sec["zero_tilt"]),
-                                search_tilt=bool(sec["search_tilt"]),
-                                go_to_tilt=int(sec["go_to_tilt"]))
+                                search_tilt=util.boolean(sec["search_tilt"]),
+                                go_to_tilt=int(sec["go_to_tilt"]),
+                                go_home=go_home,
+                                configured_head_size=float(sec["configured_sized_head"]))
         searchers.append(tmp)
         wd = notifier.add_watch(sec["low_res_folder"], watch_flags)
         watch_party.append(wd)
