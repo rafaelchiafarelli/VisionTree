@@ -25,11 +25,13 @@ class Searcher():
                  search_tilt, 
                  go_to_tilt,
                  go_home, 
-                 configured_head_size
+                 max_head_size,
+                 min_head_size
                    ):
         self.destination = destination
         self.stream = stream
-        self.configured_head_size = configured_head_size
+        self.min_head_size = min_head_size
+        self.max_head_size = max_head_size
         self.IP = IP
         self.current_pan = current_pan
         self.max_pan = max_pan
@@ -113,40 +115,29 @@ class Searcher():
             if it is to the right --> move camera to the left
             do nothing if it is up or down
             """
-            head_size = 0.5
-            if metadata["right_ear"][0] > metadata["left_ear"][0]:
-                head_size = metadata["right_ear"][0]-metadata["left_ear"][0]
-            else:
-                head_size = metadata["left_ear"][0]-metadata["right_ear"][0]
 
+            head_size = (metadata["left_ear"][0]**2-metadata["right_ear"][0]**2)**0.5
+            print("head head_size: {} l_ear_x:{} r_ear_x:{} nose x:{} y:{}".format(head_size,metadata["left_ear"][0],metadata["right_ear"][0],metadata["nose"][0],metadata["nose"][1]))
+            if head_size > self.max_head_size and head_size < self.min_head_size: 
+                print("small head")
+                return
             
-            if metadata["nose"][0] > 0.5 + head_size:
-
+            if metadata["nose"][0] > 0.8:
                 self.mover.MoveLeft(False)
                 
-            if metadata["nose"][0] < 0.5 - head_size:
-
+            if metadata["nose"][0] < 0.2:
                 self.mover.MoveRight(False)
-
                 
-            if metadata["nose"][1] < 0.5 + head_size:
-
+            if metadata["nose"][1] < 0.2:
                 self.mover.MoveUp(False)                
-            if metadata["nose"][1] > 0.5 - head_size:
 
+            if metadata["nose"][1] > 0.8:
                 self.mover.MoveDown(False)
 
-
-                
             self.SaveAndSend(picture_name,pic_uuid, metadata)
             self.visor.clean(pic_uuid)
         else:
             self.mover.continue_search()
-
-
-
-
-
 
 
     def SaveAndSend(self, picture_name, pic_uuid, metadata):
@@ -156,23 +147,31 @@ class Searcher():
         """
         print("SaveAndSend")
         
-        pic = cv2.imread(picture_name)
+        pic,face_mesh = self.visor.search_face(picture_name)
+        face_landmarks_list = face_mesh.face_landmarks
         pic_h,pic_w,_ = pic.shape
         #calculate the X inicial position
-        nose_to_right_ear = metadata["right_ear"][0] - metadata["nose"][0]
-        if nose_to_right_ear < 0:
-            nose_to_right_ear = 0
-        x = metadata["right_ear"][0]-nose_to_right_ear*4
+        Xs = []
+        for idx in range(len(face_landmarks_list)):
+            face_landmarks = face_landmarks_list[idx]    
+            for landmark in face_landmarks:
+                Xs.append(landmark.x)
+            break #there can be only one face
+        if len(Xs) == 0:
+            return
+        Xs.sort()
+        x_orig = Xs[0]
+        maximum_x = Xs[len(Xs)-1]
+        print("minimum x: {} maximum x: {}".format(x_orig, maximum_x))
+
+        x = x_orig-(maximum_x-x_orig)/2
         if x < 0:
             x = 0
-        x = int(x * pic_w)
+        
         # calculate the width
-        if metadata["left_ear"] > metadata["right_ear"]:
-            ear_to_ear = metadata["left_ear"][0] - metadata["right_ear"][0]
-        else:
-            ear_to_ear = metadata["right_ear"][0] - metadata["left_ear"][0]
-        w = ear_to_ear*1.5
-        w = int(w*pic_w)
+        w = int((maximum_x-x)*pic_w)
+        x = int(x * pic_w)
+        
         # calculate the Y inicial position
         eye_to_mounth_left = metadata["mounth_left"][1] - metadata["left_eye"][1]
         eye_to_mounth_right = metadata["mounth_right"][1] - metadata["right_eye"][1]
@@ -182,9 +181,12 @@ class Searcher():
             y = 0
         y = int(y*pic_h)
         # calculate the height 
-        h  = eye_to_mounth * 4
-        h = int(h * pic_h)
+        h = int(16*w/9)
+        ## h  = eye_to_mounth * 4
+        ## h = int(h * pic_h)
+        
         head = pic[y:y+h,x:x+w]
+
         print("head: x: {} y: {} w:{} h:{}".format(x,y,w,h))
         print("pic shape w: {} h: {}".format(pic_w,pic_h))
         print("{}/{}.jpg".format(self.stream,pic_uuid))

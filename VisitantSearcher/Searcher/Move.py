@@ -90,6 +90,7 @@ class Movement:
     def continue_search(self):
         print("continue search")
         pass
+
     def GoHome(self,max_steps):
         print("GoHome Start")
         for i in range(0,max_steps):
@@ -111,7 +112,7 @@ class Movement:
             self.move_y_queue.append("UP")
 
     def MoveDown(self, moves):
-        print("MoveDown moves:{}".format(moves))
+        
         if moves:
             
             for i in range(0,moves):

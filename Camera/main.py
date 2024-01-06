@@ -34,6 +34,10 @@ config = configparser.ConfigParser()
 def main():
     while True:
         sleep(1)
+        for camera in cameras:
+            if camera.isAlive() is False:
+                print("restart camera: {}".format(camera.name))
+                camera.restart()
 
 def create_folder(full_path,id, max_pic):
     path = Path(full_path)
@@ -51,7 +55,7 @@ if __name__ == "__main__":
     for section in config.sections():
 
         sec = config[section]
-        if "high_res_rtsp" not in sec or "low_res_rtsp" not in sec or "low_res_folder" not in sec or "high_res_folder" not in sec or "max_pic" not in sec:
+        if "high_res_rtsp" not in sec or "low_res_rtsp" not in sec or "low_res_folder" not in sec or "high_res_folder" not in sec or "max_pic" not in sec or "max_error" not in sec:
             print("error in camera {}".format(section))
             continue
 
@@ -60,7 +64,7 @@ if __name__ == "__main__":
         create_folder(sec["found_folder"],str(id), 0)
         create_folder(sec["stream_folder"],str(id), 0)
         
-        tmp = Maker.ImageMaker(str(id),sec["low_res_folder"],sec["high_res_folder"],int(sec["max_pic"]),sec["low_res_rtsp"], sec["high_res_rtsp"])
+        tmp = Maker.ImageMaker(str(id),sec["low_res_folder"],sec["high_res_folder"],int(sec["max_pic"]),sec["low_res_rtsp"], sec["high_res_rtsp"], sec["max_error"])
         tmp.start()
         cameras.append(tmp)
         id+=1

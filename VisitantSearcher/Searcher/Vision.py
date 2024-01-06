@@ -16,6 +16,7 @@ from mediapipe.framework.formats import landmark_pb2
 import mediapipe as mp
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
+
 import cv2
 import os
 import mediapipe as mp
@@ -37,7 +38,12 @@ class Vision:
             enable_segmentation=enable_segmentation,
             min_detection_confidence=min_detection_confidence)
         self.destination = destination
-
+        self.base_options = python.BaseOptions(model_asset_path='./assets/face_landmarker_v2_with_blendshapes.task')
+        self.options = vision.FaceLandmarkerOptions(base_options=self.base_options,
+                                            output_face_blendshapes=True,
+                                            output_facial_transformation_matrixes=True,
+                                            num_faces=1)
+        self.detector = vision.FaceLandmarker.create_from_options(self.options)
     
     def search_body(self, file_path):
         # For static images:
@@ -45,6 +51,7 @@ class Vision:
 
         image = cv2.imread(file_path)
         image_height, image_width, _ = image.shape
+
         # Convert the BGR image to RGB before processing.
         results = self.pose.process(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
         UUID=uuid.uuid4()
@@ -53,7 +60,6 @@ class Vision:
             #print("no landmarks -- disregard")
             return (False,UUID,{})
 
-        
         landmarks = {}
         landmarks["width"]  = image.shape[0]
         landmarks["height"]  = image.shape[1]
@@ -106,10 +112,7 @@ class Vision:
             self.mp_pose.POSE_CONNECTIONS,
             landmark_drawing_spec=self.mp_drawing_styles.get_default_pose_landmarks_style())
         if self.debug:
-            cv2.imshow("window_name", annotated_image) 
-
-            # waits for user to press any key 
-            # (this is necessary to avoid Python kernel form crashing) 
+            cv2.imshow("pose landmarks", annotated_image) 
             cv2.waitKey(10) 
         
         # calculate if the face is turned to the camera
@@ -145,3 +148,58 @@ class Vision:
         os.remove('{}/segmented{}.png'.format(self.destination,UUID))
         os.remove('{}/original{}.png'.format(self.destination,UUID))
         os.remove("{}/{}.metadata".format(self.destination,UUID))
+
+
+    def search_face(self, file_path):
+        face_image = mp.Image.create_from_file(file_path)
+
+        # STEP 4: Detect face landmarks from the input image.
+        detection_result = self.detector.detect(face_image)
+        
+        # STEP 5: Process the detection result. In this case, visualize it.
+        facemash_image = self.draw_landmarks_on_image(face_image.numpy_view(), detection_result)
+        facemash_image = cv2.cvtColor(facemash_image,cv2.COLOR_BGR2RGB)
+        if self.debug:
+            cv2.imshow("facemesh",facemash_image)
+            cv2.waitKey(10) 
+
+        return facemash_image,detection_result
+                
+
+    def draw_landmarks_on_image(self,rgb_image, detection_result):
+        face_landmarks_list = detection_result.face_landmarks
+        annotated_image = np.copy(rgb_image)
+
+        # Loop through the detected faces to visualize.
+        for idx in range(len(face_landmarks_list)):
+            face_landmarks = face_landmarks_list[idx]
+
+            # Draw the face landmarks.
+            face_landmarks_proto = landmark_pb2.NormalizedLandmarkList()
+            face_landmarks_proto.landmark.extend([
+            landmark_pb2.NormalizedLandmark(x=landmark.x, y=landmark.y, z=landmark.z) for landmark in face_landmarks
+            ])
+
+            solutions.drawing_utils.draw_landmarks(
+                image=annotated_image,
+                landmark_list=face_landmarks_proto,
+                connections=mp.solutions.face_mesh.FACEMESH_TESSELATION,
+                landmark_drawing_spec=None,
+                connection_drawing_spec=mp.solutions.drawing_styles
+                .get_default_face_mesh_tesselation_style())
+            solutions.drawing_utils.draw_landmarks(
+                image=annotated_image,
+                landmark_list=face_landmarks_proto,
+                connections=mp.solutions.face_mesh.FACEMESH_CONTOURS,
+                landmark_drawing_spec=None,
+                connection_drawing_spec=mp.solutions.drawing_styles
+                .get_default_face_mesh_contours_style())
+            solutions.drawing_utils.draw_landmarks(
+                image=annotated_image,
+                landmark_list=face_landmarks_proto,
+                connections=mp.solutions.face_mesh.FACEMESH_IRISES,
+                landmark_drawing_spec=None,
+                connection_drawing_spec=mp.solutions.drawing_styles
+                .get_default_face_mesh_iris_connections_style())
+
+        return annotated_image

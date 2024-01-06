@@ -71,7 +71,9 @@ if __name__ == "__main__":
              "go_to_tilt"  not in sec or
              "found_folder" not in sec or
              "stream_folder" not in sec or
-             "configured_sized_head" not in sec
+             "max_head_size" not in sec or
+             "min_head_size" not in sec 
+
             ):
             print("error in camera {}".format(section))
             continue
@@ -99,7 +101,9 @@ if __name__ == "__main__":
                                 search_tilt=util.boolean(sec["search_tilt"]),
                                 go_to_tilt=int(sec["go_to_tilt"]),
                                 go_home=go_home,
-                                configured_head_size=float(sec["configured_sized_head"]))
+                                min_head_size=float(sec["min_head_size"]),
+                                max_head_size=float(sec["max_head_size"])
+                                )
         searchers.append(tmp)
         wd = notifier.add_watch(sec["low_res_folder"], watch_flags)
         watch_party.append(wd)
