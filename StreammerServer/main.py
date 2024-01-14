@@ -28,58 +28,91 @@ def hello_world():
 
 def gather_img():
     while True:
-        time.sleep(0.2)
-        img = np.random.randint(0, 255, size=(128, 128, 3), dtype=np.uint8)
+        img = np.random.randint(0, 255, size=(1024, 600, 3), dtype=np.uint8)
         _, frame = cv2.imencode('.jpg', img)
         yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + frame.tobytes() + b'\r\n')
+        time.sleep(0.2)
 
-def face_img():
+def face_img(path):
     while True:
         time.sleep(1/20)
-        for file in sorted(Path('/dev/shm/camera/cam_1/stream/').iterdir(), key=lambda f: f.stat().st_mtime):
-            if ".jpg" in str(file):
-                head = cv2.imread(str(file))
-                if head is None:
-                    print("error reading image")
-                    os.remove(file)
-                    break
-                img_gray = cv2.cvtColor(head, cv2.COLOR_BGR2GRAY)
-                hist = cv2.calcHist([img_gray], [0], None, [256], [0, 256])
-                unsorted_hist = list()
-                sum= img_gray.size
-                for i,bin in enumerate(hist):
-                    unsorted_hist.append(int(bin[0]))
-                
-                unsorted_hist.sort()
-                sorted_hist = unsorted_hist
-                resum = 0
-                bad_image = False
-                
-                for value in sorted_hist:
-                    if value > sum/5:
-                        print("too many of a single color in the head")
-                        bad_image = True
-                        break
-                    else:
-                        resum+=value
-                        if resum > sum - sum/3:
-                            break
-
-                if bad_image is True:
-                    os.remove(file)
-                    break
-                else:
-                    with open(file,"rb") as f:
-                        print("file open")
-                        yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + f.read() + b'\r\n')
+        files = sorted(Path(path).iterdir(), key=lambda f: f.stat().st_mtime)
+        if files is None or len(files) == 0:
+            # create an image for the first time around, then keep the last
+            img = np.random.randint(0, 255, size=(600, 1024, 3), dtype=np.uint8)
+            _, frame = cv2.imencode('.jpg', img)
+            yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + frame.tobytes() + b'\r\n')            
+        else:
+            for file in files:
+                if ".jpg" in str(file):
+                    head = cv2.imread(str(file))
+                    if head is None:
+                        os.remove(file)
+                        continue
+                    img_gray = cv2.cvtColor(head, cv2.COLOR_BGR2GRAY)
+                    hist = cv2.calcHist([img_gray], [0], None, [256], [0, 256])
+                    unsorted_hist = list()
+                    sum= img_gray.size
+                    for i,bin in enumerate(hist):
+                        unsorted_hist.append(int(bin[0]))
                     
-                    file_name = os.path.basename(file)
-                    #shutil.move(file, "/home/rafael/workspace/VisionTree/StreammerServer/assets/{}".format(file_name) )
-                    break
+                    unsorted_hist.sort()
+                    sorted_hist = unsorted_hist
+                    resum = 0
+                    bad_image = False
+                    
+                    for value in sorted_hist:
+                        if value > sum/5:
+                            bad_image = True
+                            print("bad_image")
+                            break
+                        else:
+                            resum+=value
+                            if resum > sum - sum/3:
+                                break
 
-@app.route("/face")
-def face_stream():
-    return Response(face_img(), mimetype='multipart/x-mixed-replace; boundary=frame')
+                    if bad_image is True:
+                        try:
+                            os.remove(file)
+                        except:
+                            file_name = os.path.basename(file)
+                            print("Folder: {} and file:{} not found".format(path, file_name))
+
+                        continue
+                    else:
+                        try:
+                            with open(file,"rb") as f:
+                                yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + f.read() + b'\r\n')
+                            file_name = os.path.basename(file)
+                            #shutil.move(file, "/home/rafael/workspace/VisionTree/StreammerServer/assets/{}".format(file_name) )
+                            os.remove(file)
+                        except:
+                            pass
+                        break
+
+@app.route("/face1")
+def face_stream1():
+    return Response(face_img('/dev/shm/camera/cam_1/stream/'), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+
+@app.route("/face2")
+def face_stream2():
+    return Response(face_img('/dev/shm/camera/cam_2/stream/'), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+
+@app.route("/face3")
+def face_stream3():
+    return Response(face_img('/dev/shm/camera/cam_3/stream/'), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+
+@app.route("/face4")
+def face_stream4():
+    return Response(face_img('/dev/shm/camera/cam_4/stream/'), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+
+@app.route("/face5")
+def face_stream5():
+    return Response(face_img('/dev/shm/camera/cam_5/stream/'), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 
 @app.route("/test")

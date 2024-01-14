@@ -20,16 +20,18 @@ client.connect(554,IPAddress, function() {
 								"Content-type: ptzCmd: "+command+"\r\n"+
 								"CSeq: 2\r\n"+
 								"Session:\r\n\r\n");
+	console.log('writen');
+
 });
 
 client.on('data', function(data) {
-	//console.log('Received: ' + data);
+	console.log('Received: ' + data);
 
 	client.destroy(); // kill client after server's response
 });
 
 client.on('close', function() {
-	//console.log('Connection closed');
+	console.log('Connection closed');
 });
 function retry(ErrorMessage){
 	console.log((new Date()).toISOString(), 'Error on ptz.js', ErrorMessage);

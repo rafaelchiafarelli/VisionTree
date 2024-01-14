@@ -3,7 +3,9 @@ This is a wrapper that will call the necessary commands to move the cameras.
 One object for each camera
 """
 
-from nodejs import node
+import requests
+
+
 from threading import Thread
 
 from time import sleep
@@ -26,9 +28,10 @@ class Movement:
         self.move_x_queue = []
         self.move_y_queue = []
 
-        if go_home == True:
-            self.GoHome(max_steps)
-
+        self.xml = "<s:Envelope xmlns:s=\"http://www.w3.org/2003/05/soap-envelope\"><s:Body xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"><ContinuousMove xmlns=\"http://www.onvif.org/ver20/ptz/wsdl\"><ProfileToken>IPCProfilesToken0</ProfileToken><Velocity><PanTilt x=\"{}\" y=\"{}\" xmlns=\"http://www.onvif.org/ver10/schema\"/></Velocity></ContinuousMove></s:Body></s:Envelope>"
+        self.headers = {'Content-Type': 'application/xml'} # set what your server accepts
+        self.url = 'http://{}:5000/onvif/deviceio_service'
+        self.max_steps = max_steps
         self.current_pan = current_pan
         self.max_pan = max_pan
         self.zero_pan = zero_pan
@@ -44,6 +47,11 @@ class Movement:
         self.alive = True
         self.moving.start()
 
+    def Stop(self):
+        self.alive = False
+        self.moving.join(timeout=2000)        
+
+
     def __del__(self):
         self.alive = False
         self.moving.join(timeout=2000)
@@ -51,6 +59,13 @@ class Movement:
     def move(self):
         last_x_move = "NO_MOVE"
         last_y_move = "NO_MOVE"
+        if self.alive:
+            if self.go_home:
+                self.GoHome()
+            self.move_to_pan()
+            self.move_to_tilt()
+           
+
         while self.alive:
             
             if len(self.move_x_queue) > 0:
@@ -59,14 +74,17 @@ class Movement:
                     if current_x_move == "LEFT":
                         print("left decrease")
                         if self.zero_pan < self.current_pan:
+                            requests.post(self.url.format(self.IP), data=self.xml.format(1,0), headers=self.headers)
                             self.current_pan-=1
                     elif current_x_move == "RIGHT":
                         print("right increases")
                         if self.max_pan > self.current_pan:
+                            requests.post(self.url.format(self.IP), data=self.xml.format(-1,0), headers=self.headers)
                             self.current_pan+=1
-                    node.run(['./Searcher/assets/ptz.js', self.IP, current_x_move], )
+                    
+
                     last_x_move = current_x_move
-                    sleep(2)
+                    sleep(1)
             else:
                 last_x_move = "NO_MOVE"
 
@@ -76,28 +94,31 @@ class Movement:
                     if current_y_move == "DWON":
                         print("dwon decrease")  
                         if self.zero_tilt < self.current_tilt:
+                            requests.post(self.url.format(self.IP), data=self.xml.format(0,1), headers=self.headers)
                             self.current_tilt-=1
                     elif current_y_move == "UP":
                         print("up increases")                  
                         if self.max_tilt > self.current_tilt:
+                            requests.post(self.url.format(self.IP), data=self.xml.format(0,-1), headers=self.headers)
                             self.current_tilt+=1
-                    node.run(['./Searcher/assets/ptz.js', self.IP, current_y_move], )
                     last_y_move = current_y_move
-                    sleep(2)
+                    sleep(1)
             else:
                 last_y_move = "NO_MOVE"
             sleep(0.1)
     def continue_search(self):
-        print("continue search")
+        
         pass
 
-    def GoHome(self,max_steps):
+    def GoHome(self):
         print("GoHome Start")
-        for i in range(0,max_steps):
-            node.run(['./Searcher/assets/ptz.js', self.IP, "DWON"], )
-            sleep(2)
-            node.run(['./Searcher/assets/ptz.js', self.IP, "LEFT"], )
-            sleep(2)
+        for i in range(0,self.max_steps):
+            requests.post(self.url.format(self.IP), data=self.xml.format(0,1), headers=self.headers)
+            sleep(1)
+            requests.post(self.url.format(self.IP), data=self.xml.format(1,0), headers=self.headers)
+            sleep(1)
+            if self.alive is not True:
+                break
         print("GoHome End")
 
 
@@ -106,8 +127,8 @@ class Movement:
         if moves:
         
             for i in range(0,moves):
-                node.run(['./Searcher/assets/ptz.js', self.IP, "UP"], )
-                sleep(2)
+                requests.post(self.url.format(self.IP), data=self.xml.format(0,-1), headers=self.headers)
+                sleep(1)
         else:
             self.move_y_queue.append("UP")
 
@@ -116,8 +137,8 @@ class Movement:
         if moves:
             
             for i in range(0,moves):
-                node.run(['./Searcher/assets/ptz.js', self.IP, "DWON"], )
-                sleep(2)
+                requests.post(self.url.format(self.IP), data=self.xml.format(0,1), headers=self.headers)
+                sleep(1)
         else:
             self.move_y_queue.append("DWON")
 
@@ -126,8 +147,8 @@ class Movement:
         if moves:
             
             for i in range(0,moves):
-                node.run(['./Searcher/assets/ptz.js', self.IP, "LEFT"], )
-                sleep(2)
+                requests.post(self.url.format(self.IP), data=self.xml.format(1,0), headers=self.headers)
+                sleep(1)
         else:
             self.move_x_queue.append("LEFT")
     
@@ -135,7 +156,26 @@ class Movement:
         print("moveright:{}".format(moves))
         if moves:
             for i in range(0,moves):
-                node.run(['./Searcher/assets/ptz.js', self.IP, "RIGHT"], )
-                sleep(2)
+                requests.post(self.url.format(self.IP), data=self.xml.format(-1,0), headers=self.headers)
+                sleep(1)
         else:
             self.move_x_queue.append("RIGHT")
+
+    
+    def move_to_pan(self):
+        if self.current_pan > self.go_to_pan:
+            self.MoveLeft(self.current_pan-self.go_to_pan)
+
+        if self.current_pan < self.go_to_pan:
+            self.MoveRight(self.go_to_pan-self.current_pan)
+        self.current_pan = self.go_to_pan
+
+
+
+    def move_to_tilt(self):
+        if self.current_tilt > self.go_to_tilt:
+            self.MoveDown(self.current_tilt - self.go_to_tilt)
+
+        if self.current_tilt < self.go_to_tilt:
+            self.MoveUp(self.go_to_tilt - self.current_tilt)
+        self.current_tilt = self.go_to_tilt            

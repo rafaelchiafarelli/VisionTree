@@ -50,6 +50,8 @@ class Vision:
         BG_COLOR = (192, 192, 192) # gray
 
         image = cv2.imread(file_path)
+        if image is None:
+            return (False,UUID,{})
         image_height, image_width, _ = image.shape
 
         # Convert the BGR image to RGB before processing.
@@ -157,13 +159,16 @@ class Vision:
         detection_result = self.detector.detect(face_image)
         
         # STEP 5: Process the detection result. In this case, visualize it.
-        facemash_image = self.draw_landmarks_on_image(face_image.numpy_view(), detection_result)
-        facemash_image = cv2.cvtColor(facemash_image,cv2.COLOR_BGR2RGB)
+        
         if self.debug:
-            cv2.imshow("facemesh",facemash_image)
+            facemesh_image = self.draw_landmarks_on_image(face_image.numpy_view(), detection_result)
+            facemesh_image = cv2.cvtColor(facemesh_image,cv2.COLOR_BGR2RGB)
+            face_image = facemesh_image
+            cv2.imshow("facemesh",facemesh_image)
             cv2.waitKey(10) 
-
-        return facemash_image,detection_result
+            return facemesh_image,detection_result
+        image = cv2.cvtColor(face_image.numpy_view(),cv2.COLOR_BGR2RGB)
+        return image,detection_result
                 
 
     def draw_landmarks_on_image(self,rgb_image, detection_result):

@@ -14,6 +14,7 @@ class Searcher():
                  destination,
                  stream,
                  IP,
+                 max_steps,
                  current_pan, 
                  max_pan, 
                  zero_pan,
@@ -43,14 +44,14 @@ class Searcher():
         self.zero_tilt = zero_tilt
         self.search_tilt = search_tilt
         self.go_to_tilt = go_to_tilt 
-        max_step = self.max_pan
+        self.max_steps = max_steps
         self.go_home = go_home
         if self.max_pan < self.max_tilt:
             max_step = self.max_tilt    
         
         self.mover = Movement(IP=self.IP,
                               go_home=self.go_home,
-                              max_steps=max_step,
+                              max_steps=max_steps,
                               current_pan= current_pan,
                               max_pan = max_pan,
                               zero_pan = zero_pan,
@@ -61,10 +62,7 @@ class Searcher():
                               zero_tilt = zero_tilt,
                               search_tilt = search_tilt,
                               go_to_tilt = go_to_tilt )
-        if self.go_to_pan != self.current_pan:
-            self.move_to_pan()
-        if self.go_to_tilt != self.current_tilt:
-            self.move_to_tilt()
+
         
         self.debug = debug
         self.visor = Vision(debug=self.debug,
@@ -77,26 +75,10 @@ class Searcher():
     def __del__(self):
         del self.mover
         del self.visor
-    
-    def move_to_pan(self):
-        print("move to pan from: {} to: {}".format(self.current_pan, self.go_to_pan))
-        if self.current_pan > self.go_to_pan:
-            self.mover.MoveLeft(self.current_pan-self.go_to_pan)
+        
+    def Stop(self):
+        self.mover.Stop()
 
-        if self.current_pan < self.go_to_pan:
-            self.mover.MoveRight(self.go_to_pan-self.current_pan)
-        self.current_pan = self.go_to_pan
-
-
-
-    def move_to_tilt(self):
-        print("move to tilt from: {} to: {}".format(self.current_tilt, self.go_to_tilt))
-        if self.current_tilt > self.go_to_tilt:
-            self.mover.MoveDown(self.current_tilt - self.go_to_tilt)
-
-        if self.current_tilt < self.go_to_tilt:
-            self.mover.MoveUp(self.go_to_tilt - self.current_tilt)
-        self.current_tilt = self.go_to_tilt
 
 
     def run(self, picture_name):
@@ -146,8 +128,11 @@ class Searcher():
         save the picture in the stream folder
         """
         print("SaveAndSend")
-        
-        pic,face_mesh = self.visor.search_face(picture_name)
+        try:
+            pic,face_mesh = self.visor.search_face(picture_name)
+        except:
+            print("erorr while reading image")
+            return
         face_landmarks_list = face_mesh.face_landmarks
         pic_h,pic_w,_ = pic.shape
         #calculate the X inicial position

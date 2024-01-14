@@ -27,12 +27,16 @@ searchers = []
 cameras = []
 config = configparser.ConfigParser()
 notifier = INotify()
-watch_flags = flags.MODIFY | flags.DELETE_SELF
+watch_flags = flags.CLOSE_WRITE | flags.MODIFY 
 watch_party = []
 alive = True
 def main():
+
+    
+
     while alive:
         for event in notifier.read(timeout=100):
+            # camera application will generate the files.
             if event.name.startswith("met_"):
                 tmp = event.name.split(".")
                 pic_id = tmp[0].split("_")[1]
@@ -41,9 +45,9 @@ def main():
                 searchers[camera_id].run(picture_name)
                 break
     for searcher in searchers:
+        searcher.Stop()
+        
         del searcher
-    for camera in cameras:
-        del camera
 
         
 if __name__ == "__main__":
@@ -72,8 +76,8 @@ if __name__ == "__main__":
              "found_folder" not in sec or
              "stream_folder" not in sec or
              "max_head_size" not in sec or
-             "min_head_size" not in sec 
-
+             "min_head_size" not in sec or
+            "max_steps" not in sec 
             ):
             print("error in camera {}".format(section))
             continue
@@ -90,6 +94,7 @@ if __name__ == "__main__":
                                 destination=sec["found_folder"],
                                 stream=sec["stream_folder"],
                                 IP=sec["CamIP"],
+                                max_steps=sec['max_steps'],
                                 current_pan=int(sec["current_pan"]),
                                 max_pan=int(sec["max_pan"]),
                                 zero_pan=int(sec["zero_pan"]),
@@ -111,7 +116,7 @@ if __name__ == "__main__":
 
 try:
     main()
-except KeyboardInterrupt:
+except:
     # terminate main thread
     alive = False
 

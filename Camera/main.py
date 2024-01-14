@@ -28,6 +28,7 @@ import os
 import sys
 from pathlib import Path
 from shutil import copy
+import subprocess
 cameras = []
 config = configparser.ConfigParser()
 
@@ -35,9 +36,20 @@ def main():
     while True:
         sleep(1)
         for camera in cameras:
-            if camera.isAlive() is False:
-                print("restart camera: {}".format(camera.name))
-                camera.restart()
+            if camera['process'].poll() is not None:
+                print("camera is dead")
+                config = camera['config']
+                cameras.remove(camera)
+                cameras.append({'process':subprocess.Popen(['python','./Image/main.py',
+                                    config['id'],
+                                    config['low_res_folder'],
+                                    config['high_res_folder'],
+                                    config['max_pic'],
+                                    config['low_res_rtsp'],
+                                    config['high_res_rtsp'],
+                                    config['max_error']
+                                    ]),
+                                'config':config})
 
 def create_folder(full_path,id, max_pic):
     path = Path(full_path)
@@ -63,18 +75,32 @@ if __name__ == "__main__":
         create_folder(sec["high_res_folder"],str(id), sec["max_pic"])
         create_folder(sec["found_folder"],str(id), 0)
         create_folder(sec["stream_folder"],str(id), 0)
-        
-        tmp = Maker.ImageMaker(str(id),sec["low_res_folder"],sec["high_res_folder"],int(sec["max_pic"]),sec["low_res_rtsp"], sec["high_res_rtsp"], sec["max_error"])
-        tmp.start()
-        cameras.append(tmp)
+        conf = {'id':str(id),
+         'low_res_folder':sec["low_res_folder"],
+         'high_res_folder':sec["high_res_folder"],
+         'max_pic':sec["max_pic"],
+         'low_res_rtsp':sec["low_res_rtsp"],
+         'high_res_rtsp':sec["high_res_rtsp"],
+         'max_error':sec["max_error"]
+         }
+        cameras.append({'process':subprocess.Popen(['python','./Image/main.py',
+                                          conf['id'],
+                                          conf['low_res_folder'],
+                                          conf['high_res_folder'],
+                                          conf['max_pic'],
+                                          conf['low_res_rtsp'],
+                                          conf['high_res_rtsp'],
+                                          conf['max_error']
+                                            ]),
+                        'config':conf})
         id+=1
 
 try:
     main()
-except KeyboardInterrupt:
+except :
     # terminate main thread
     print('Main interrupted! Exiting.')
     for camera in cameras:
-        camera.stop()
+        camera['process'].kill()
     sys.exit()
     

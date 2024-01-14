@@ -27,14 +27,15 @@ class ImageMaker:
         self.max_error = max_error
         self.alive = False
         #don´t forget to use the Yoosee program to setup the password. The user will always be admin
-
+        print("ID for this thread {}".format(self.name))
         self.keep_alive = False
+    
 
     def start(self):
-        print("launch thread")
+        print("launch thread {}".format(self.name))
         self.keep_alive = True
         self.alive = True
-        self.thread = Thread(target=self.th)
+        self.thread = Thread(target=self.th, args=(self.name,))
         self.thread.start()
 
     def stop(self):
@@ -50,19 +51,22 @@ class ImageMaker:
     def isAlive(self):
         return self.alive
 
-    def th(self):
+    def th(self, ID):
+        print("running thread {}".format(ID))
         os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;udp"
 
         #low_res_cam = cv2.VideoCapture(self.rtsp_low, cv2.CAP_FFMPEG)
+        
         high_res_cam = cv2.VideoCapture(self.rtsp_high, cv2.CAP_FFMPEG)
 
         #ret,low_frame = low_res_cam.read()
         ret,high_frame = high_res_cam.read()
-
+        
         id = 0
         err=0
         while self.keep_alive:
             timestamp = datetime.datetime.now().timestamp() 
+        
             """ret,low_frame = low_res_cam.read()
             if ret is False:
                 continue
@@ -73,13 +77,18 @@ class ImageMaker:
             
             if ret is False:
                 err+=1
+        
                 if err > self.max_error:
                     err = 0
+                    
                     break
                 continue
             else:
                 err = 0
-
+            #cv2.imshow("pic{}".format(ID), cv2.cvtColor(high_frame,cv2.COLOR_BGR2RGB)) 
+            # waits for user to press any key 
+            # (this is necessary to avoid Python kernel form crashing) 
+            #cv2.waitKey(10) 
             img_hsv = cv2.cvtColor(high_frame, cv2.COLOR_BGR2HSV)
             
             high_saturation = img_hsv[:, :, 1].mean()
@@ -99,7 +108,7 @@ class ImageMaker:
             bad_image = False
             for value in sorted_hist:
                 if value > sum/3:
-                    print("too many of a single color")
+                    #print("ID:{} too many of a single color".format(ID))
                     bad_image = True
                     break
                 else:
@@ -114,6 +123,7 @@ class ImageMaker:
                 id+=1
                 if id > self.max_pic:
                     id = 0
+            sleep(0.1)
 
         #low_res_cam.release()
         high_res_cam.release()
