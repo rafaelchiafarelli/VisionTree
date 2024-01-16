@@ -26,7 +26,7 @@ class ImageMaker:
         self.name = name
         self.max_error = max_error
         self.alive = False
-        #don´t forget to use the Yoosee program to setup the password. The user will always be admin
+        
         print("ID for this thread {}".format(self.name))
         self.keep_alive = False
     

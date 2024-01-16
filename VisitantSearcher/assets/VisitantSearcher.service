@@ -1,0 +1,15 @@
+[Unit]
+Description=Searcher service. Will start one thread per camera configured
+After=network.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=10
+WorkingDirectory=/home/rafael/workspace/VisionTree/VisitantSearcher
+ExecStart=/home/rafael/workspace/VisionTree/VisitantSearcher/assets/executer.sh
+Restart=on-abort
+
+[Install]
+WantedBy=multi-user.target

@@ -33,13 +33,18 @@ def gather_img():
         yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + frame.tobytes() + b'\r\n')
         time.sleep(0.2)
 
-def face_img(path):
+def face_img(path, face = None):
     while True:
         time.sleep(1/20)
         files = sorted(Path(path).iterdir(), key=lambda f: f.stat().st_mtime)
-        if files is None or len(files) == 0:
+        has_pic = False      
+        for file in files:
+            if ".jpg" in str(file):
+                has_pic = True
+                break
+        if has_pic is not True:
             # create an image for the first time around, then keep the last
-            img = np.random.randint(0, 255, size=(600, 1024, 3), dtype=np.uint8)
+            img = np.random.randint(0, 255, size=(1024, 600, 3), dtype=np.uint8)
             _, frame = cv2.imencode('.jpg', img)
             yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + frame.tobytes() + b'\r\n')            
         else:
@@ -92,6 +97,7 @@ def face_img(path):
 
 @app.route("/face1")
 def face_stream1():
+    
     return Response(face_img('/dev/shm/camera/cam_1/stream/'), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 
@@ -102,7 +108,8 @@ def face_stream2():
 
 @app.route("/face3")
 def face_stream3():
-    return Response(face_img('/dev/shm/camera/cam_3/stream/'), mimetype='multipart/x-mixed-replace; boundary=frame')
+    print("got to face 3")
+    return Response(face_img('/dev/shm/camera/cam_3/stream/',face=3), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 
 @app.route("/face4")

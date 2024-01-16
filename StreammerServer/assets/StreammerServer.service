@@ -1,0 +1,15 @@
+[Unit]
+Description=Streammer server. Will stream images captured by the searcher
+After=network.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=10
+WorkingDirectory=/home/rafael/workspace/VisionTree/StreammerServer
+ExecStart=/home/rafael/workspace/VisionTree/StreammerServer/assets/executer.sh
+Restart=on-abort
+
+[Install]
+WantedBy=multi-user.target

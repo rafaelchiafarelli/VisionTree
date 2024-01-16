@@ -51,7 +51,7 @@ public class MjpegView extends View {
     private int drawX, drawY, vWidth = -1, vHeight = -1;
     private int lastImgWidth, lastImgHeight;
     private boolean adjustWidth, adjustHeight;
-    private int msecWaitAfterReadImageError = WAIT_AFTER_READ_IMAGE_ERROR_MSEC;
+    private int msecWaitAfterReadImageError = 0;
     private boolean isRecycleBitmap;
     private boolean isUserForceConfigRecycle;
     private boolean isSupportPinchZoomAndPan;

@@ -31,7 +31,7 @@ public class MainActivity extends AppCompatActivity {
         //view.setAdjustWidth(true);
         view1.setMode(MjpegView.MODE_FIT_WIDTH);
         //view.setMsecWaitAfterReadImageError(1000);
-        view1.setUrl("http://192.168.0.117:5000/face1");
+        view1.setUrl("http://192.168.0.117:5000/face5");
         view1.setRecycleBitmap(true);
 
         view1.setStateChangeListener(new MjpegViewStateChangeListener() {
