@@ -27,24 +27,26 @@ class ImageMaker:
         self.max_error = max_error
         self.alive = False
         
-        print("ID for this thread {}".format(self.name))
+        self.log("ID for this thread {}".format(self.name))
         self.keep_alive = False
     
-
+    def log(self, data):
+        print("ImageMaker[{}]:{}".format(self.name,data))
+        
     def start(self):
-        print("launch thread {}".format(self.name))
+        self.log("launch thread {}".format(self.name))
         self.keep_alive = True
         self.alive = True
         self.thread = Thread(target=self.th, args=(self.name,))
         self.thread.start()
 
     def stop(self):
-        print("camera will join its thread")
+        self.log("camera will join its thread")
         self.keep_alive = False
         self.thread.join()
     
     def restart(self):
-        print("relaunch thread")
+        self.log("relaunch thread")
         self.stop()
         self.start()
         
@@ -52,7 +54,7 @@ class ImageMaker:
         return self.alive
 
     def th(self, ID):
-        print("running thread {}".format(ID))
+        self.log("running thread {}".format(ID))
         os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;udp"
 
         #low_res_cam = cv2.VideoCapture(self.rtsp_low, cv2.CAP_FFMPEG)
@@ -100,7 +102,7 @@ class ImageMaker:
             for i,bin in enumerate(hist):
                 unsorted_hist.append(int(bin[0]))
                 
-                #print("value of position {} is {}".format(i,bin[0]))
+                #self.log("value of position {} is {}".format(i,bin[0]))
             
             unsorted_hist.sort()
             sorted_hist = unsorted_hist
@@ -108,7 +110,7 @@ class ImageMaker:
             bad_image = False
             for value in sorted_hist:
                 if value > sum/3:
-                    #print("ID:{} too many of a single color".format(ID))
+                    #self.log("ID:{} too many of a single color".format(ID))
                     bad_image = True
                     break
                 else:

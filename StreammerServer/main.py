@@ -33,6 +33,21 @@ def gather_img():
         yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + frame.tobytes() + b'\r\n')
         time.sleep(0.2)
 
+def stream_img(path, id):
+    while True:
+        
+        files = sorted(Path(path).iterdir(), key=lambda f: f.stat().st_mtime)
+        for file in files:
+            if ".jpg" in str(file):
+                select_file = file
+                break
+        with open(select_file,"rb") as f:
+            yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + f.read() + b'\r\n')
+            time.sleep(1/20)
+
+
+
+
 def face_img(path, face = None):
     while True:
         time.sleep(1/20)
@@ -120,6 +135,33 @@ def face_stream4():
 @app.route("/face5")
 def face_stream5():
     return Response(face_img('/dev/shm/camera/cam_5/stream/'), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+@app.route("/cam1")
+def cam_stream1():
+    return Response(stream_img('/dev/shm/camera/cam_1/high_res/',id=0), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+
+@app.route("/cam2")
+def cam_stream2():
+    return Response(stream_img('/dev/shm/camera/cam_2/high_res/',id=0), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+
+@app.route("/cam3")
+def cam_stream3():
+    print("got to face 3")
+    return Response(stream_img('/dev/shm/camera/cam_3/high_res/',id=0), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+
+@app.route("/cam4")
+def cam_stream4():
+    return Response(stream_img('/dev/shm/camera/cam_4/high_res/',id=0), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+
+@app.route("/cam5")
+def cam_stream5():
+    return Response(stream_img('/dev/shm/camera/cam_5/high_res/',id=0), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+
 
 
 @app.route("/test")

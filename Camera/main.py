@@ -31,10 +31,14 @@ from shutil import copy
 import subprocess
 cameras = []
 config = configparser.ConfigParser()
-
+alive = True
+dead = False
 def main():
-    while True:
+    global alive
+    global dead
+    while alive:
         sleep(1)
+        """check if camera is alive"""
         for camera in cameras:
             if camera['process'].poll() is not None:
                 print("camera is dead")
@@ -50,6 +54,7 @@ def main():
                                     config['max_error']
                                     ]),
                                 'config':config})
+    dead = True
 
 def create_folder(full_path,id, max_pic):
     path = Path(full_path)
@@ -100,6 +105,8 @@ try:
 except :
     # terminate main thread
     print('Main interrupted! Exiting.')
+    while not dead:
+        sleep(1)
     for camera in cameras:
         camera['process'].kill()
     sys.exit()

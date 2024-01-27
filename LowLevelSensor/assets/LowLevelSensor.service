@@ -1,0 +1,15 @@
+[Unit]
+Description=Will control the temperature of the vaze
+After=network.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=10
+WorkingDirectory=/home/rafael/workspace/VisionTree/LowLevelSensor
+ExecStart=/home/rafael/workspace/VisionTree/LowLevelSensor/assets/executer.sh
+Restart=on-abort
+
+[Install]
+WantedBy=multi-user.target

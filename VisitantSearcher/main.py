@@ -20,9 +20,6 @@ from pathlib import Path
 from inotify_simple import INotify, flags
 
 
-
-
-
 searchers = []
 cameras = []
 config = configparser.ConfigParser()
@@ -30,25 +27,27 @@ notifier = INotify()
 watch_flags = flags.CLOSE_WRITE | flags.MODIFY 
 watch_party = []
 alive = True
+dead = False
 def main():
-
-    
-
-    while alive:
+    global dead
+    global alive
+    while alive:    
         for event in notifier.read(timeout=100):
             # camera application will generate the files.
             if event.name.startswith("met_"):
                 tmp = event.name.split(".")
                 pic_id = tmp[0].split("_")[1]
                 camera_id = int(tmp[1])
-                picture_name = "{}/img_{}.jpg".format(cameras[camera_id]["low_res_folder"],pic_id)
+
+                picture_name = "{}/img_{}.jpg".format(cameras[camera_id]["high_res_folder"],pic_id)
+
                 searchers[camera_id].run(picture_name)
                 break
     for searcher in searchers:
         searcher.Stop()
         
         del searcher
-
+    dead = True
         
 if __name__ == "__main__":
 
@@ -94,7 +93,7 @@ if __name__ == "__main__":
                                 destination=sec["found_folder"],
                                 stream=sec["stream_folder"],
                                 IP=sec["CamIP"],
-                                max_steps=sec['max_steps'],
+                                max_steps=int(sec['max_steps']),
                                 current_pan=int(sec["current_pan"]),
                                 max_pan=int(sec["max_pan"]),
                                 zero_pan=int(sec["zero_pan"]),
@@ -110,7 +109,7 @@ if __name__ == "__main__":
                                 max_head_size=float(sec["max_head_size"])
                                 )
         searchers.append(tmp)
-        wd = notifier.add_watch(sec["low_res_folder"], watch_flags)
+        wd = notifier.add_watch(sec["high_res_folder"], watch_flags)
         watch_party.append(wd)
 
 
@@ -119,8 +118,10 @@ try:
 except:
     # terminate main thread
     alive = False
-
     print('Main interrupted! Exiting.')
-
+    for searcher in searchers:
+        searcher.Stop()
+        del searcher        
+    dead = True
     sys.exit()
         

@@ -9,6 +9,8 @@ import requests
 from threading import Thread
 
 from time import sleep
+
+
 class Movement:
     def __init__(self, IP, 
                 go_home, 
@@ -43,12 +45,19 @@ class Movement:
         self.search_tilt = search_tilt
         self.go_to_tilt = go_to_tilt 
         self.go_home = go_home            
-
+        self.done = False
         self.alive = True
         self.moving.start()
 
+    def log(self, data):
+        print("[{}]:{}".format(self.IP, data))
+
+    def Started(self):
+        return self.done
+
     def Stop(self):
         self.alive = False
+        self.log("stop moving!")
         self.moving.join(timeout=2000)        
 
 
@@ -62,6 +71,8 @@ class Movement:
         if self.alive:
             if self.go_home:
                 self.GoHome()
+            else:
+                self.done = True
             self.move_to_pan()
             self.move_to_tilt()
            
@@ -72,15 +83,23 @@ class Movement:
                 current_x_move =  self.move_x_queue.pop()
                 if last_x_move != current_x_move:
                     if current_x_move == "LEFT":
-                        print("left decrease")
+                        self.log("left decrease")
                         if self.zero_pan < self.current_pan:
-                            requests.post(self.url.format(self.IP), data=self.xml.format(1,0), headers=self.headers)
-                            self.current_pan-=1
+                            try:
+                                requests.post(self.url.format(self.IP), data=self.xml.format(1,0), headers=self.headers)
+                                self.current_pan-=1
+                            except:
+                                self.log("exception durin request -- continue -- not subtracted to current_pan")
+                            
                     elif current_x_move == "RIGHT":
-                        print("right increases")
+                        self.log("right increases")
                         if self.max_pan > self.current_pan:
-                            requests.post(self.url.format(self.IP), data=self.xml.format(-1,0), headers=self.headers)
-                            self.current_pan+=1
+                            try:
+                                requests.post(self.url.format(self.IP), data=self.xml.format(-1,0), headers=self.headers)   
+                                self.current_pan+=1
+                            except:
+                                self.log("exception durin request -- continue -- not added to current pan")
+                            
                     
 
                     last_x_move = current_x_move
@@ -92,43 +111,68 @@ class Movement:
                 current_y_move =  self.move_y_queue.pop()
                 if last_y_move != current_y_move:
                     if current_y_move == "DWON":
-                        print("dwon decrease")  
+                        self.log("dwon decrease")  
                         if self.zero_tilt < self.current_tilt:
-                            requests.post(self.url.format(self.IP), data=self.xml.format(0,1), headers=self.headers)
-                            self.current_tilt-=1
+                            try:
+                                requests.post(self.url.format(self.IP), data=self.xml.format(0,1), headers=self.headers,timeout=1)
+                                self.current_tilt-=1
+                            except:
+                                self.log("exception durin request -- continue - not subtracted from current tilt")
+                            
                     elif current_y_move == "UP":
-                        print("up increases")                  
+                        self.log("up increases")                  
                         if self.max_tilt > self.current_tilt:
-                            requests.post(self.url.format(self.IP), data=self.xml.format(0,-1), headers=self.headers)
-                            self.current_tilt+=1
+                            try:
+                                requests.post(self.url.format(self.IP), data=self.xml.format(0,-1), headers=self.headers,timeout=1)
+                                self.current_tilt+=1
+                            except:
+                                self.log("exception durin request -- continue - not added to current_tilt")
+                            
                     last_y_move = current_y_move
                     sleep(1)
             else:
                 last_y_move = "NO_MOVE"
             sleep(0.1)
     def continue_search(self):
+        """
+        search algorithm
+        """
         
-        pass
 
     def GoHome(self):
-        print("GoHome Start")
+        self.log("GoHome Start")
+        step = 0
         for i in range(0,self.max_steps):
-            requests.post(self.url.format(self.IP), data=self.xml.format(0,1), headers=self.headers)
-            sleep(1)
-            requests.post(self.url.format(self.IP), data=self.xml.format(1,0), headers=self.headers)
-            sleep(1)
+            try:
+                requests.post(self.url.format(self.IP), data=self.xml.format(1,0), headers=self.headers,timeout=1)
+            except:
+                self.log("exception durin request -- continue")
+            sleep(2)
+            try:
+                requests.post(self.url.format(self.IP), data=self.xml.format(0,-1), headers=self.headers,timeout=1)
+            except:
+                self.log("exception durin request -- continue")
+            sleep(2)
+            
+            step+=1
             if self.alive is not True:
                 break
-        print("GoHome End")
+        self.done = True
+        self.log("GoHome End")
 
 
     def MoveUp(self, moves):
-        print("moveup moves:{}".format(moves))
+        self.log("moveup moves:{}".format(moves))
         if moves:
         
             for i in range(0,moves):
-                requests.post(self.url.format(self.IP), data=self.xml.format(0,-1), headers=self.headers)
+                try:
+                    requests.post(self.url.format(self.IP), data=self.xml.format(0,-1), headers=self.headers)
+                except:
+                    self.log("exception durin request -- continue")
                 sleep(1)
+                if self.alive is not True:
+                    break                
         else:
             self.move_y_queue.append("UP")
 
@@ -137,27 +181,42 @@ class Movement:
         if moves:
             
             for i in range(0,moves):
-                requests.post(self.url.format(self.IP), data=self.xml.format(0,1), headers=self.headers)
+                try:
+                    requests.post(self.url.format(self.IP), data=self.xml.format(0,1), headers=self.headers)
+                except:
+                    self.log("exception durin request -- continue")
                 sleep(1)
+                if self.alive is not True:
+                    break                
         else:
             self.move_y_queue.append("DWON")
 
     def MoveLeft(self, moves):
-        print("moveleft moves:{}".format(moves))
+        self.log("moveleft moves:{}".format(moves))
         if moves:
             
             for i in range(0,moves):
-                requests.post(self.url.format(self.IP), data=self.xml.format(1,0), headers=self.headers)
+                try:
+                    requests.post(self.url.format(self.IP), data=self.xml.format(1,0), headers=self.headers)
+                except:
+                    self.log("exception durin request -- continue")
                 sleep(1)
+                if self.alive is not True:
+                    break
         else:
             self.move_x_queue.append("LEFT")
     
     def MoveRight(self, moves):
-        print("moveright:{}".format(moves))
+        self.log("moveright:{}".format(moves))
         if moves:
             for i in range(0,moves):
-                requests.post(self.url.format(self.IP), data=self.xml.format(-1,0), headers=self.headers)
+                try:
+                    requests.post(self.url.format(self.IP), data=self.xml.format(-1,0), headers=self.headers)
+                except:
+                    self.log("exception durin request -- continue")
                 sleep(1)
+                if self.alive is not True:
+                    break                
         else:
             self.move_x_queue.append("RIGHT")
 

@@ -46,8 +46,6 @@ class Searcher():
         self.go_to_tilt = go_to_tilt 
         self.max_steps = max_steps
         self.go_home = go_home
-        if self.max_pan < self.max_tilt:
-            max_step = self.max_tilt    
         
         self.mover = Movement(IP=self.IP,
                               go_home=self.go_home,
@@ -65,7 +63,8 @@ class Searcher():
 
         
         self.debug = debug
-        self.visor = Vision(debug=self.debug,
+        self.visor = Vision(name=self.IP,
+                            debug=self.debug,
                             static_image_mode=True,
                             model_complexity=2,
                             enable_segmentation=True,
@@ -77,49 +76,51 @@ class Searcher():
         del self.visor
         
     def Stop(self):
+        self.log("die")
         self.mover.Stop()
 
-
+    def log(self,data):
+        print("Searcher[{}]:{}".format(self.IP,data))
 
     def run(self, picture_name):
         """thread that will be running 
         
-        print("get the picture {}".format(picture_name))
-        print("check for human bones (with mediapipe and pose-estimation)")
+        self.log("get the picture {}".format(picture_name))
+        self.log("check for human bones (with mediapipe and pose-estimation)")
         continuously"""
+        if self.mover.Started():
+            has_head,pic_uuid, metadata = self.visor.search_body(picture_name)
+            if has_head:
+                self.log("there is a HEAD")
+                """there is a HEAD
+                if head is close to the center --> do nothing
+                if it is to the lef --> move camera to the right
+                if it is to the right --> move camera to the left
+                do nothing if it is up or down
+                """
 
-        has_head,pic_uuid, metadata = self.visor.search_body(picture_name)
-        if has_head:
-            print("there is a HEAD")
-            """there is a HEAD
-            if head is close to the center --> do nothing
-            if it is to the lef --> move camera to the right
-            if it is to the right --> move camera to the left
-            do nothing if it is up or down
-            """
-
-            head_size = (metadata["left_ear"][0]**2-metadata["right_ear"][0]**2)**0.5
-            print("head head_size: {} l_ear_x:{} r_ear_x:{} nose x:{} y:{}".format(head_size,metadata["left_ear"][0],metadata["right_ear"][0],metadata["nose"][0],metadata["nose"][1]))
-            if head_size > self.max_head_size and head_size < self.min_head_size: 
-                print("small head")
-                return
-            
-            if metadata["nose"][0] > 0.8:
-                self.mover.MoveLeft(False)
+                head_size = (metadata["left_ear"][0]**2-metadata["right_ear"][0]**2)**0.5
+                self.log("head head_size: {} l_ear_x:{} r_ear_x:{} nose x:{} y:{}".format(head_size,metadata["left_ear"][0],metadata["right_ear"][0],metadata["nose"][0],metadata["nose"][1]))
+                if head_size > self.max_head_size and head_size < self.min_head_size: 
+                    self.log("small head")
+                    return
                 
-            if metadata["nose"][0] < 0.2:
-                self.mover.MoveRight(False)
-                
-            if metadata["nose"][1] < 0.2:
-                self.mover.MoveUp(False)                
+                if metadata["nose"][0] > 0.8:
+                    self.mover.MoveLeft(False)
+                    
+                if metadata["nose"][0] < 0.2:
+                    self.mover.MoveRight(False)
+                    
+                if metadata["nose"][1] < 0.2:
+                    self.mover.MoveUp(False)                
 
-            if metadata["nose"][1] > 0.8:
-                self.mover.MoveDown(False)
+                if metadata["nose"][1] > 0.8:
+                    self.mover.MoveDown(False)
 
-            self.SaveAndSend(picture_name,pic_uuid, metadata)
-            self.visor.clean(pic_uuid)
-        else:
-            self.mover.continue_search()
+                self.SaveAndSend(picture_name,pic_uuid, metadata)
+                self.visor.clean(pic_uuid)
+            else:
+                self.mover.continue_search()
 
 
     def SaveAndSend(self, picture_name, pic_uuid, metadata):
@@ -127,11 +128,11 @@ class Searcher():
         cut the face out of the picture
         save the picture in the stream folder
         """
-        print("SaveAndSend")
+        self.log("SaveAndSend")
         try:
             pic,face_mesh = self.visor.search_face(picture_name)
         except:
-            print("erorr while reading image")
+            self.log("erorr while reading image")
             return
         face_landmarks_list = face_mesh.face_landmarks
         pic_h,pic_w,_ = pic.shape
@@ -147,7 +148,7 @@ class Searcher():
         Xs.sort()
         x_orig = Xs[0]
         maximum_x = Xs[len(Xs)-1]
-        print("minimum x: {} maximum x: {}".format(x_orig, maximum_x))
+        self.log("minimum x: {} maximum x: {}".format(x_orig, maximum_x))
 
         x = x_orig-(maximum_x-x_orig)/2
         if x < 0:
@@ -172,9 +173,9 @@ class Searcher():
         
         head = pic[y:y+h,x:x+w]
 
-        print("head: x: {} y: {} w:{} h:{}".format(x,y,w,h))
-        print("pic shape w: {} h: {}".format(pic_w,pic_h))
-        print("{}/{}.jpg".format(self.stream,pic_uuid))
+        self.log("head: x: {} y: {} w:{} h:{}".format(x,y,w,h))
+        self.log("pic shape w: {} h: {}".format(pic_w,pic_h))
+        self.log("{}/{}.jpg".format(self.stream,pic_uuid))
         cv2.imwrite("{}/{}.jpg".format(self.stream,pic_uuid),head)
         if self.debug:
             cv2.imshow("head_pic", head) 
