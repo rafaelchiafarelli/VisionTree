@@ -16,7 +16,9 @@ from Sensor.Sensor import TempSensor
 from time import sleep
 import os
 import sys
+import serial
 
+comm = serial.Serial("/dev/ttyUSB0",115200)
 config = configparser.ConfigParser()
 alive = True
 global sensor
@@ -27,14 +29,14 @@ def main():
     global alive
 
     while alive:
-        sleep(2)
+        sleep(1)
         temperature = sensor.Measure()
         print("temperature: {}".format(temperature))
         action = controller.Control(temperature)
         if action == 1:
-            actuator.HighHigh()
+            comm.write(bytes(b'{r:002}\r\n'))
         else:
-            actuator.LowLow()
+            comm.write(bytes(b'{r:000}\r\n'))
 
 
 if __name__ == "__main__":
@@ -52,14 +54,15 @@ if __name__ == "__main__":
         controller = Controller(config["controller"])
     
     if 'actuator' in sections:
-        actuator = Actuator(config['actuator'])
-        actuator.begin()
+        pass
+        #actuator = Actuator(config['actuator'])
+        #actuator.begin()
 
 
 try:
     main()
 except :
-    actuator.end()
+    #actuator.end()
     print('Main interrupted! Exiting.')
     
     sys.exit()

@@ -9,112 +9,28 @@
 * no database will be available
 * processed pictures will be saved with their metadata
 """
-import time
+from FaceStreammer import face_img, stream_img, gather_img, full_picture
+from Status import Status
+from Vote import Vote
 import numpy as np
 import matplotlib.pyplot as plt
 import cv2
 import os
-from flask import Flask, Response
-import shutil
-
+from flask import Flask, Response, render_template,send_from_directory, jsonify, request, redirect
 from pathlib import Path
 
 app = Flask(__name__)
 @app.route("/")
+def landpage():
+    return render_template('index.html')
 
-
-def hello_world():
-    return "<p>Hello, World!</p>"
-
-def gather_img():
-    while True:
-        img = np.random.randint(0, 255, size=(1024, 600, 3), dtype=np.uint8)
-        _, frame = cv2.imencode('.jpg', img)
-        yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + frame.tobytes() + b'\r\n')
-        time.sleep(0.2)
-
-def stream_img(path, id):
-    while True:
-        
-        files = sorted(Path(path).iterdir(), key=lambda f: f.stat().st_mtime)
-        for file in files:
-            if ".jpg" in str(file):
-                select_file = file
-                break
-        with open(select_file,"rb") as f:
-            yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + f.read() + b'\r\n')
-            time.sleep(1/20)
-
-
-
-
-def face_img(path, face = None):
-    while True:
-        time.sleep(1/20)
-        files = sorted(Path(path).iterdir(), key=lambda f: f.stat().st_mtime)
-        has_pic = False      
-        for file in files:
-            if ".jpg" in str(file):
-                has_pic = True
-                break
-        if has_pic is not True:
-            # create an image for the first time around, then keep the last
-            img = np.random.randint(0, 255, size=(1024, 600, 3), dtype=np.uint8)
-            _, frame = cv2.imencode('.jpg', img)
-            yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + frame.tobytes() + b'\r\n')            
-        else:
-            for file in files:
-                if ".jpg" in str(file):
-                    head = cv2.imread(str(file))
-                    if head is None:
-                        os.remove(file)
-                        continue
-                    img_gray = cv2.cvtColor(head, cv2.COLOR_BGR2GRAY)
-                    hist = cv2.calcHist([img_gray], [0], None, [256], [0, 256])
-                    unsorted_hist = list()
-                    sum= img_gray.size
-                    for i,bin in enumerate(hist):
-                        unsorted_hist.append(int(bin[0]))
-                    
-                    unsorted_hist.sort()
-                    sorted_hist = unsorted_hist
-                    resum = 0
-                    bad_image = False
-                    
-                    for value in sorted_hist:
-                        if value > sum/5:
-                            bad_image = True
-                            print("bad_image")
-                            break
-                        else:
-                            resum+=value
-                            if resum > sum - sum/3:
-                                break
-
-                    if bad_image is True:
-                        try:
-                            os.remove(file)
-                        except:
-                            file_name = os.path.basename(file)
-                            print("Folder: {} and file:{} not found".format(path, file_name))
-
-                        continue
-                    else:
-                        try:
-                            with open(file,"rb") as f:
-                                yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + f.read() + b'\r\n')
-                            file_name = os.path.basename(file)
-                            #shutil.move(file, "/home/rafael/workspace/VisionTree/StreammerServer/assets/{}".format(file_name) )
-                            os.remove(file)
-                        except:
-                            pass
-                        break
+@app.route("/static/<path:filename>")
+def send_js(filename):
+    return send_from_directory(filename, static_url_path='path')
 
 @app.route("/face1")
 def face_stream1():
-    
     return Response(face_img('/dev/shm/camera/cam_1/stream/'), mimetype='multipart/x-mixed-replace; boundary=frame')
-
 
 @app.route("/face2")
 def face_stream2():
@@ -131,7 +47,6 @@ def face_stream3():
 def face_stream4():
     return Response(face_img('/dev/shm/camera/cam_4/stream/'), mimetype='multipart/x-mixed-replace; boundary=frame')
 
-
 @app.route("/face5")
 def face_stream5():
     return Response(face_img('/dev/shm/camera/cam_5/stream/'), mimetype='multipart/x-mixed-replace; boundary=frame')
@@ -140,33 +55,60 @@ def face_stream5():
 def cam_stream1():
     return Response(stream_img('/dev/shm/camera/cam_1/high_res/',id=0), mimetype='multipart/x-mixed-replace; boundary=frame')
 
-
 @app.route("/cam2")
 def cam_stream2():
     return Response(stream_img('/dev/shm/camera/cam_2/high_res/',id=0), mimetype='multipart/x-mixed-replace; boundary=frame')
-
 
 @app.route("/cam3")
 def cam_stream3():
     print("got to face 3")
     return Response(stream_img('/dev/shm/camera/cam_3/high_res/',id=0), mimetype='multipart/x-mixed-replace; boundary=frame')
 
-
 @app.route("/cam4")
 def cam_stream4():
     return Response(stream_img('/dev/shm/camera/cam_4/high_res/',id=0), mimetype='multipart/x-mixed-replace; boundary=frame')
-
 
 @app.route("/cam5")
 def cam_stream5():
     return Response(stream_img('/dev/shm/camera/cam_5/high_res/',id=0), mimetype='multipart/x-mixed-replace; boundary=frame')
 
-
+@app.route("/video_feed")
+def full_pic():
+    return Response(full_picture(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 
 @app.route("/test")
 def mjpeg():
     return Response(gather_img(), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+
+@app.route("/statistics")
+def statistics():
+    st = Status
+    d = st.status()
+    return jsonify(d) 
+
+@app.route('/vote/<int:vote>')
+def voting(vote):
+    """
+    a vote goes from
+    0 to 9
+    """
+    v = Vote(int(vote))
+    
+    return redirect("/")
+
+@app.route("/message", methods=['POST'])
+def message():
+    raw = request.values.to_dict()
+    print(raw)
+    with open("/home/rafael/workspace/VisionTree/messages.txt", "a") as msg:
+        line = "{},{},{}\r\n".format(raw['name'],raw['email'],raw['message'])
+        print(line)
+        msg.write(line)
+
+
+    return redirect("/")
 
 def main():
     app.run(host='0.0.0.0', threaded=True)

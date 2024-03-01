@@ -18,7 +18,7 @@ import sys
 from pathlib import Path
 
 from inotify_simple import INotify, flags
-
+''
 
 searchers = []
 cameras = []

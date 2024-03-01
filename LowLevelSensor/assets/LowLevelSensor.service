@@ -8,7 +8,7 @@ Type=simple
 Restart=always
 RestartSec=10
 WorkingDirectory=/home/rafael/workspace/VisionTree/LowLevelSensor
-ExecStart=/home/rafael/workspace/VisionTree/LowLevelSensor/assets/executer.sh
+ExecStart=/home/rafael/workspace/VisionTree/LowLevelSensor/assets/executable.sh
 Restart=on-abort
 
 [Install]

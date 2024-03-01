@@ -1,4 +1,5 @@
 import serial
+from time import sleep
 from threading import Thread
 class Actuator:
     def __init__(self, conf):
@@ -12,12 +13,15 @@ class Actuator:
         
     
     def begin(self):
+        print(self.name)
+        print(self.baudrate)
         self.comm = serial.Serial(self.name, 
                                   self.baudrate,
-                                  parity=serial.PARITY_NONE,
-                                  stopbits=serial.STOPBITS_ONE,
-                                  bytesize=serial.EIGHTBITS, 
+                                  parity='N',
+                                  stopbits=1,
+                                  bytesize=8, 
                                   timeout=self.timeout)
+        
         self.th = Thread(target=self.HartBeat)
         self.alive = True
         self.th.start()
@@ -30,16 +34,13 @@ class Actuator:
 
     def HartBeat(self):
         while self.alive:
- 
             if self.state == 1:
-                self.comm.write(bytes(b'{a:002}\n'))
-                
+                self.comm.write(bytes(b'{r:002}\r\n'))
             else:
-                self.comm.write(bytes(b'{a:000}\n'))
-            self.comm.flush()
+                self.comm.write(bytes(b'{r:000}\r\n'))
+            sleep(0.1)
             
-            msg = self.comm.readline()
-            
+        
 
     def HighHigh(self):
         self.state = 1

@@ -12,6 +12,6 @@ class Controller:
             
         if temp < self.LowPoint:
             self.CurrentState = 0
-        
+        print("CurrentState {}".format(self.CurrentState))
         return self.CurrentState
         
