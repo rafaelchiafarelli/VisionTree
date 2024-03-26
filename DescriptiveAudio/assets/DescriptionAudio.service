@@ -1,0 +1,18 @@
+[Unit]
+Description=Will start the audio after start up and then will keep the audio running
+After=network.target
+StartLimitIntervalSec=0
+
+[Service]
+User=rafael
+Type=simple
+Restart=always
+RestartSec=10
+Environment="DISPLAY=:0"
+WorkingDirectory=/www/media
+ExecStart=/home/rafael/workspace/VisionTree/DescriptiveAudio/player.sh
+
+
+
+[Install]
+WantedBy=graphical.target

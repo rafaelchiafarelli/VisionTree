@@ -8,7 +8,7 @@ from Searcher.Vision import Vision
 import cv2
 from time import sleep
 
-mover = Movement(IP="192.168.0.54",
+mover = Movement(IP="192.168.15.7",
                         go_home=True,
                         max_steps=120,   
                         current_pan= 0,

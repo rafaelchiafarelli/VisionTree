@@ -27,7 +27,7 @@ from time import sleep
 import os
 import sys
 from pathlib import Path
-from shutil import copy
+from shutil import copy, chown
 import subprocess
 cameras = []
 config = configparser.ConfigParser()
@@ -41,7 +41,7 @@ def main():
         """check if camera is alive"""
         for camera in cameras:
             if camera['process'].poll() is not None:
-                print("camera is dead")
+                print("camera {} is dead".format(camera['id']))
                 config = camera['config']
                 cameras.remove(camera)
                 cameras.append({'process':subprocess.Popen(['python','./Image/main.py',
@@ -59,6 +59,7 @@ def main():
 def create_folder(full_path,id, max_pic):
     path = Path(full_path)
     path.mkdir(parents=True, exist_ok=True)
+    chown(path=path,user="rafael",group="rafael")
     for i in range(0, int(max_pic)+1):
         copy("./assets/img.jpg", "{}/img_{}.jpg".format(full_path, i))
         copy("./assets/met", "{}/met_{}.{}".format(full_path,i,id))

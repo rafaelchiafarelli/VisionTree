@@ -14,12 +14,15 @@ from Status import Status
 from Vote import Vote
 import numpy as np
 import matplotlib.pyplot as plt
+import subprocess
 import cv2
 import os
 from flask import Flask, Response, render_template,send_from_directory, jsonify, request, redirect
 from pathlib import Path
+import datetime
 
 app = Flask(__name__)
+st = Status()
 @app.route("/")
 def landpage():
     return render_template('index.html')
@@ -39,7 +42,7 @@ def face_stream2():
 
 @app.route("/face3")
 def face_stream3():
-    print("got to face 3")
+
     return Response(face_img('/dev/shm/camera/cam_3/stream/',face=3), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 
@@ -61,7 +64,7 @@ def cam_stream2():
 
 @app.route("/cam3")
 def cam_stream3():
-    print("got to face 3")
+
     return Response(stream_img('/dev/shm/camera/cam_3/high_res/',id=0), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 @app.route("/cam4")
@@ -77,14 +80,15 @@ def full_pic():
     return Response(full_picture(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 
-@app.route("/test")
+@app.route("/restart")
 def mjpeg():
-    return Response(gather_img(), mimetype='multipart/x-mixed-replace; boundary=frame')
+    subprocess.run('/home/rafael/workspace/VisionTree/StreammerServer/assets/restarter.sh', shell=True, executable='/bin/bash')
+    return {"restarting":True}
 
 
 @app.route("/statistics")
 def statistics():
-    st = Status
+
     d = st.status()
     return jsonify(d) 
 
@@ -103,7 +107,8 @@ def message():
     raw = request.values.to_dict()
     print(raw)
     with open("/home/rafael/workspace/VisionTree/messages.txt", "a") as msg:
-        line = "{},{},{}\r\n".format(raw['name'],raw['email'],raw['message'])
+        now = datetime.datetime.now()
+        line = "{},{},{},{}\r\n".format(raw['name'],raw['email'],raw['message'], now)
         print(line)
         msg.write(line)
 
@@ -111,7 +116,7 @@ def message():
     return redirect("/")
 
 def main():
-    app.run(host='0.0.0.0', threaded=True)
+    app.run(host='0.0.0.0', threaded=True,debug=True)
 
 if __name__ == "__main__":
     main()

@@ -5,6 +5,7 @@ import cv2
 import os
 from pathlib import Path
 import numpy as np
+import shutil
 
 def gather_img():
     while True:
@@ -37,13 +38,15 @@ def face_img(path, face = None):
             if ".jpg" in str(file):
                 has_pic = True
                 break
+
+
         if has_pic is not True:
             # create an image for the first time around, then keep the last
             img = np.random.randint(0, 255, size=(1024, 600, 3), dtype=np.uint8)
             _, frame = cv2.imencode('.jpg', img)
             yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + frame.tobytes() + b'\r\n')            
         else:
-            for file in files:
+            for infile,file in enumerate(files):
                 if ".jpg" in str(file):
                     head = cv2.imread(str(file))
                     if head is None:
@@ -84,10 +87,15 @@ def face_img(path, face = None):
                             with open(file,"rb") as f:
                                 yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + f.read() + b'\r\n')
                             file_name = os.path.basename(file)
-                            #shutil.move(file, "/home/rafael/workspace/VisionTree/StreammerServer/assets/{}".format(file_name) )
-                            os.remove(file)
+
+                            if infile<len(files)-1:
+                                shutil.copy(file, "/home/rafael/storage/{}".format(file_name) )
+                                os.remove(file)
+                                
+                                
                         except:
                             pass
+                        time.sleep(0.05)
                         break
 
 def full_picture():
