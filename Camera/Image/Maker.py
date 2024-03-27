@@ -18,6 +18,7 @@ from matplotlib import pyplot as plt
 class ImageMaker:
     
     def __init__(self,name, low_res_folder, high_res_folder, max_pic, rtsp_low, rtsp_high, max_error):
+        
         self.low_res_folder = low_res_folder
         self.high_res_folder = high_res_folder
         self.max_pic = max_pic
@@ -133,14 +134,16 @@ class ImageMaker:
                 
     def save_frame(self, frame, folder, id, saturation,timestamp):
         img_path = '{}/img_{}.{}'.format(folder, id, "jpg")
-        met_path = "{}/met_{}.{}".format(folder,id, self.name)
+        met_path = "../history_{}.met".format(self.name)
+        
         os.remove(img_path)
-        os.remove(met_path)
         cv2.imwrite(img_path, frame)
-        with open(met_path, "w") as metadata:
+        with open(met_path, "a") as metadata:
             
             data = {"metadata":[{"timestamp":timestamp},
                     {"ID":id},
                     {"saturation":saturation}
                     ]}
-            metadata.write(json.dumps(data,indent=1))
+
+            metadata.write("{},\r\n".format(data))
+            metadata.close()

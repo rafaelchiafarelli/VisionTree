@@ -10,7 +10,7 @@ RestartSec=10
 VIRTUAL_ENV=/home/rafael/workspace/VisionTree/venv/bin/
 Environment=PATH=$VIRTUAL_ENV/bin:$PATH
 WorkingDirectory=/home/rafael/workspace/VisionTree/Camera/
-ExecStart=/home/rafael/workspace/VisionTree/Camera/assets/executer.sh
+ExecStart=/home/rafael/workspace/VisionTree/Camera/assets/executer.sh 3
 Restart=on-abort
 
 [Install]

@@ -1,0 +1,17 @@
+[Unit]
+Description=Camera service. It will run one camera per configuration
+After=network.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=10
+VIRTUAL_ENV=/home/rafael/workspace/VisionTree/venv/bin/
+Environment=PATH=$VIRTUAL_ENV/bin:$PATH
+WorkingDirectory=/home/rafael/workspace/VisionTree/Camera/
+ExecStart=/home/rafael/workspace/VisionTree/Camera/assets/executer.sh 4
+Restart=on-abort
+
+[Install]
+WantedBy=multi-user.target

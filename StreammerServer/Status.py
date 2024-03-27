@@ -14,6 +14,7 @@ class Status():
             except OSError:
                     file.seek(0)
             self.current_data = file.readline().decode()
+            file.close()
             if len(self.current_data) == 0:
                 self.current_data = "{\"internet\":{\"start\":00,\"status\":-1}, \"face_count\":{\"start\":00,\"face_count\":0},\"disk_free\":{\"start\":00,\"disk_free\":0}}"
 
@@ -66,3 +67,15 @@ class Status():
         response["start"] = start.strftime('%Y-%m-%d %H:%M:%S')
         response["disk_free"] = free
         return response
+    def get_cam_data(self):
+        start = datetime.datetime.now()
+        for cam in range(1,4):
+            with open("/home/rafael/workspace/VisionTree/history_{}.txt".format(cam), 'rb') as file:
+                try:
+                    file.seek(-2,os.SEEK_END)
+                    while file.read(1) != b'\n':
+                        file.seek(-2,os.SEEK_CUR)
+                except OSError:
+                        file.seek(0)
+                metadata = file.readline().decode()
+                file.close()

@@ -80,10 +80,10 @@ def full_pic():
     return Response(full_picture(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 
-@app.route("/restart")
-def mjpeg():
-    subprocess.run('/home/rafael/workspace/VisionTree/StreammerServer/assets/restarter.sh', shell=True, executable='/bin/bash')
-    return {"restarting":True}
+@app.route("/restart/<int:cam>")
+def mjpeg(cam):
+    subprocess.run('/home/rafael/workspace/VisionTree/StreammerServer/assets/restarter.sh {}'.format(cam), shell=True, executable='/bin/bash')
+    return {"restarting":True,"camera":cam}
 
 
 @app.route("/statistics")

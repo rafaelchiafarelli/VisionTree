@@ -33,28 +33,6 @@ cameras = []
 config = configparser.ConfigParser()
 alive = True
 dead = False
-def main():
-    global alive
-    global dead
-    while alive:
-        sleep(1)
-        """check if camera is alive"""
-        for camera in cameras:
-            if camera['process'].poll() is not None:
-                print("camera {} is dead".format(camera['id']))
-                config = camera['config']
-                cameras.remove(camera)
-                cameras.append({'process':subprocess.Popen(['python','./Image/main.py',
-                                    config['id'],
-                                    config['low_res_folder'],
-                                    config['high_res_folder'],
-                                    config['max_pic'],
-                                    config['low_res_rtsp'],
-                                    config['high_res_rtsp'],
-                                    config['max_error']
-                                    ]),
-                                'config':config})
-    dead = True
 
 def create_folder(full_path,id, max_pic):
     path = Path(full_path)
@@ -66,13 +44,13 @@ def create_folder(full_path,id, max_pic):
 
 
 if __name__ == "__main__":
-
-    config.read("./assets/camera.conf")
+    id = sys.argv[1]
+    config.read("./assets/camera{}.conf".format(id))
     
-    id = 0
     for section in config.sections():
-
+        
         sec = config[section]
+        print(sec)
         if "high_res_rtsp" not in sec or "low_res_rtsp" not in sec or "low_res_folder" not in sec or "high_res_folder" not in sec or "max_pic" not in sec or "max_error" not in sec:
             print("error in camera {}".format(section))
             continue
@@ -84,31 +62,32 @@ if __name__ == "__main__":
         conf = {'id':str(id),
          'low_res_folder':sec["low_res_folder"],
          'high_res_folder':sec["high_res_folder"],
-         'max_pic':sec["max_pic"],
+         'max_pic':int(sec["max_pic"]),
          'low_res_rtsp':sec["low_res_rtsp"],
          'high_res_rtsp':sec["high_res_rtsp"],
-         'max_error':sec["max_error"]
+         'max_error':int(sec["max_error"])
          }
-        cameras.append({'process':subprocess.Popen(['python','./Image/main.py',
-                                          conf['id'],
-                                          conf['low_res_folder'],
-                                          conf['high_res_folder'],
-                                          conf['max_pic'],
-                                          conf['low_res_rtsp'],
-                                          conf['high_res_rtsp'],
-                                          conf['max_error']
-                                            ]),
-                        'config':conf})
-        id+=1
+        print(conf)
 
-try:
-    main()
-except :
-    # terminate main thread
-    print('Main interrupted! Exiting.')
-    while not dead:
-        sleep(1)
-    for camera in cameras:
-        camera['process'].kill()
-    sys.exit()
-    
+
+    try:
+        camera = Maker.ImageMaker(name = conf["id"],
+                                low_res_folder=conf["low_res_folder"],
+                                high_res_folder=conf["high_res_folder"],
+                                max_pic=conf["max_pic"],
+                                rtsp_low=conf["low_res_rtsp"],
+                                rtsp_high=conf["high_res_rtsp"],
+                                max_error=conf["max_error"])
+        camera.start()
+        while alive:
+            sleep(1)
+
+    except :
+        camera.stop()
+        alive = False
+        count=0
+        while camera.isAlive() and count<5:
+            sleep(1)
+            count+=1
+        sys.exit()
+        
