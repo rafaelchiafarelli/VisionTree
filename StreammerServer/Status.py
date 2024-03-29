@@ -82,14 +82,29 @@ class Status():
                         file.seek(0)
                 data = file.readline().decode().split("\r")[0]
                 raw = json.loads(data)
+                
                 raw["picname"] = "./static/temp/cam_{}_pic_{}.jpg".format(cam,raw["ID"])
                 copy("/dev/shm/camera/cam_{}/high_res/img_{}.jpg".format(cam,raw["ID"]), 
                      raw["picname"])
-                
-                metadata.append(raw)
+
+                with open("/home/rafael/workspace/VisionTree/face_history_{}.met".format(cam), 'rb') as face_file:
+                    try:
+                        face_file.seek(-2,os.SEEK_END)
+                        while face_file.read(1) != b'\n':
+                            face_file.seek(-2,os.SEEK_CUR)
+                    except OSError:
+                            face_file.seek(0)
+                    data = face_file.readline().decode().split("\r")[0]
+                    raw["face"] = json.loads(data)
+                    
+                    raw["facename"] = "./static/temp/face_{}_{}.jpg".format(cam,raw["face"]["head_number"])
+                    
+                    metadata.append(raw)
+                    face_file.close()   
                 file.close()
+             
         response = {}
         response["start"] = start.strftime('%Y-%m-%d %H:%M:%S.%f')
-        response["metadata"] = metadata
-        
+        response["metadata"] = metadata        
         return response
+  

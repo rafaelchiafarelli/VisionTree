@@ -33,12 +33,25 @@
 
 			{% for camera in cameras %}			
 			<nav>
-					<ul><span class="image main"><img src={{ camera.picname }} alt="" /></span>
+					<ul>
+						<div class="container">
+							<span class="image">
+								<ul>
+									<img src= "{{ camera.picname }}" alt="" />
+									<img src= "{{ camera.facename }}" alt="" />
+								</ul>
+							</span>
 
-						<div>
 							<li>timestamp {{ camera.timestamp }}</li>
 							<li>ID {{ camera.ID }}</li>
+							<li>Número {{ camera.pic_number }}</li>
 							<li>saturação {{ camera.saturation }}</li>
+							<li>
+								
+									<a href="/restart/{{ camera.ID }}" class="button">Reset</a>
+									
+								
+							</li>
 						</div>
 
 					</ul>

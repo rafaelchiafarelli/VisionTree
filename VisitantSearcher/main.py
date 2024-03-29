@@ -74,7 +74,8 @@ if __name__ == "__main__":
              "stream_folder" not in sec or
              "max_head_size" not in sec or
              "min_head_size" not in sec or
-            "max_steps" not in sec 
+            "max_steps" not in sec or
+            "searcher_id" not in sec
             ):
             print("error in camera {}".format(section))
             continue
@@ -104,7 +105,8 @@ if __name__ == "__main__":
                                 go_to_tilt=int(sec["go_to_tilt"]),
                                 go_home=go_home,
                                 min_head_size=float(sec["min_head_size"]),
-                                max_head_size=float(sec["max_head_size"])
+                                max_head_size=float(sec["max_head_size"]),
+                                searcher_id=int(sec["searcher_id"])
                                 )
         searchers.append(tmp)
         

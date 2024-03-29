@@ -7,7 +7,7 @@ from Searcher.Move import Movement
 from Searcher.Vision import Vision
 import cv2
 from time import sleep
-
+import json
 class Searcher():
     def __init__(self,
                  debug, 
@@ -27,7 +27,8 @@ class Searcher():
                  go_to_tilt,
                  go_home, 
                  max_head_size,
-                 min_head_size
+                 min_head_size,
+                 searcher_id
                    ):
         self.destination = destination
         self.stream = stream
@@ -46,7 +47,9 @@ class Searcher():
         self.go_to_tilt = go_to_tilt 
         self.max_steps = max_steps
         self.go_home = go_home
-        
+        self.searcher_id = searcher_id
+        self.head_number = 0
+
         self.mover = Movement(IP=self.IP,
                               go_home=self.go_home,
                               max_steps=max_steps,
@@ -177,6 +180,21 @@ class Searcher():
         self.log("pic shape w: {} h: {}".format(pic_w,pic_h))
         self.log("{}/{}.jpg".format(self.stream,pic_uuid))
         cv2.imwrite("{}/{}.jpg".format(self.stream,pic_uuid),head)
+
+        cv2.imwrite("../StreammerServer/static/temp/face_{}_{}.jpg".format(self.searcher_id,self.head_number),head)
+
+        history_path = "../face_history_{}.met".format(self.searcher_id)
+
+        with open(history_path, "a") as meta:
+            metadata["head_number"] = self.head_number
+            meta.write("{}\r\n".format(json.dumps(metadata)))
+            meta.close()
+
+        if self.head_number < 10:
+            self.head_number += 1
+        else:
+            self.head_number = 0
+
         if self.debug:
             cv2.imshow("head_pic", head) 
             # waits for user to press any key 

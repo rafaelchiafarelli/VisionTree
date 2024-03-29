@@ -142,7 +142,8 @@ class ImageMaker:
         data = {}
         data = {}
         data["timestamp"] = timestamp.strftime('%Y-%m-%d %H:%M:%S.%f')
-        data["ID"] = id
+        data["ID"] = self.name
+        data["pic_number"] = id
         data["saturation"] =saturation        
         with open(history_path, "a") as metadata:
             metadata.write("{}\r\n".format(json.dumps(data)))

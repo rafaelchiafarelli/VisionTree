@@ -30,7 +30,6 @@ def landpage():
 @app.route("/status")
 def status():
     metadata = st.get_cam_data()
-    print(metadata)
     return render_template('status.html',cameras=metadata['metadata'])
  
 @app.route("/static/<path:filename>")
@@ -89,7 +88,7 @@ def full_pic():
 @app.route("/restart/<int:cam>")
 def mjpeg(cam):
     subprocess.run('/home/rafael/workspace/VisionTree/StreammerServer/assets/restarter.sh {}'.format(cam), shell=True, executable='/bin/bash')
-    return {"restarting":True,"camera":cam}
+    return redirect("/status")
 
 
 @app.route("/statistics")
