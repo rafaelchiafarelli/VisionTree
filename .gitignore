@@ -7,3 +7,4 @@ messages.txt
 history_*
 *.pyc
 StreammerServer/static/temp/*.jpg
+face_history_*
