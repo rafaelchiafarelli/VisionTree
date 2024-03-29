@@ -27,6 +27,12 @@ st = Status()
 def landpage():
     return render_template('index.html')
 
+@app.route("/status")
+def status():
+    metadata = st.get_cam_data()
+    print(metadata)
+    return render_template('status.html',cameras=metadata['metadata'])
+ 
 @app.route("/static/<path:filename>")
 def send_js(filename):
     return send_from_directory(filename, static_url_path='path')

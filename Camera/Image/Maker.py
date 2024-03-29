@@ -68,7 +68,7 @@ class ImageMaker:
         id = 0
         err=0
         while self.keep_alive:
-            timestamp = datetime.datetime.now().timestamp() 
+            timestamp = datetime.datetime.now()
         
             """ret,low_frame = low_res_cam.read()
             if ret is False:
@@ -134,16 +134,18 @@ class ImageMaker:
                 
     def save_frame(self, frame, folder, id, saturation,timestamp):
         img_path = '{}/img_{}.{}'.format(folder, id, "jpg")
-        met_path = "../history_{}.met".format(self.name)
+        met_path = '{}/met_{}.{}'.format(folder, id, self.name)
+        history_path = "../history_{}.met".format(self.name)
         
         os.remove(img_path)
         cv2.imwrite(img_path, frame)
-        with open(met_path, "a") as metadata:
-            
-            data = {"metadata":[{"timestamp":timestamp},
-                    {"ID":id},
-                    {"saturation":saturation}
-                    ]}
-
-            metadata.write("{},\r\n".format(data))
+        data = {}
+        data = {}
+        data["timestamp"] = timestamp.strftime('%Y-%m-%d %H:%M:%S.%f')
+        data["ID"] = id
+        data["saturation"] =saturation        
+        with open(history_path, "a") as metadata:
+            metadata.write("{}\r\n".format(json.dumps(data)))
             metadata.close()
+        with open(met_path, "w") as met:
+            met.write("{}".format(json.dumps(data)))

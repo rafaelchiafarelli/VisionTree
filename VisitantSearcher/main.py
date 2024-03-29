@@ -37,10 +37,8 @@ def main():
             if event.name.startswith("met_"):
                 tmp = event.name.split(".")
                 pic_id = tmp[0].split("_")[1]
-                camera_id = int(tmp[1])
-
+                camera_id = int(tmp[1])-1
                 picture_name = "{}/img_{}.jpg".format(cameras[camera_id]["high_res_folder"],pic_id)
-
                 searchers[camera_id].run(picture_name)
                 break
     for searcher in searchers:
@@ -109,13 +107,15 @@ if __name__ == "__main__":
                                 max_head_size=float(sec["max_head_size"])
                                 )
         searchers.append(tmp)
+        
         wd = notifier.add_watch(sec["high_res_folder"], watch_flags)
         watch_party.append(wd)
 
 
 try:
     main()
-except:
+except Exception as e:  
+    print('error: %s', repr(e))
     # terminate main thread
     alive = False
     print('Main interrupted! Exiting.')
