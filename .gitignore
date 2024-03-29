@@ -6,4 +6,4 @@ votes.txt
 messages.txt
 history_*
 *.pyc
-*temp/cam_*
+StreammerServer/static/temp/*.jpg
